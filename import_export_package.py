@@ -4,7 +4,7 @@ import argparse
 
 from exporting.export_package import export_package
 from importing.import_package import import_package
-from mgmt_api_lib import APIClientArgs
+from cp_mgmt_api_python_sdk.lib import APIClientArgs
 from utils import process_arguments, extract_sid_from_session_file, handle_login_fail
 
 debug = None
@@ -12,7 +12,7 @@ log_file = None
 output_file = None
 client = None
 
-from mgmt_api_lib import APIClient
+from cp_mgmt_api_python_sdk.lib import APIClient
 
 if __name__ == "__main__":
 
