@@ -13,7 +13,7 @@ Clone the repository with this command:
 ```git
 git clone --recursive https://github.com/CheckPoint-APIs-Team/ExportImportPolicyPackage
 ```
-Or by clicking the Download ZIP button.
+or by clicking the Download ZIP button. In this case, the "cp_mgmt_api_python_sdk" folder will be created empty and you will need to manually download and copy the Check Point API Python SDK content into this folder.
 
 To export a package, run the import_export_package.py script. An interactive menu will guide you the rest of the way. Command line flags may also be set in order to skip some or all of the menu.
 
