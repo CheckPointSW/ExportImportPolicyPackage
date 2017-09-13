@@ -99,8 +99,8 @@ def get_query_rulebase_data(client, api_type, payload):
         offset += limit
 
     for general_object in general_objects:
-        string = ("##Show presented object of type {0} " + (
-            "with name {1}" if "name" in general_object else "with no name")).format(
+        string = (u"##Show presented object of type {0} " + (
+            u"with name {1}" if "name" in general_object else u"with no name")).format(
             general_object["type"], general_object["name"] if "name" in general_object else "")
         debug_log(string)
         if should_export(general_object):
@@ -109,22 +109,21 @@ def get_query_rulebase_data(client, api_type, payload):
     debug_log("Analysing rulebase items...")
     for rulebase_item in rulebase_items:
         if any(x in rulebase_item["type"] for x in ["access-rule", "threat-rule", "threat-exception"]):
-            string = ("##Show presented independent rule of type {0} " + ("with name {1}" if "name" in rulebase_item
-                                                                          else "with no name")).format(
-                rulebase_item["type"], rulebase_item["name"] if "name" in
-                                                                rulebase_item else "")
+            string = (u"##Show presented independent rule of type {0} "
+                      + (u"with name {1}" if "name" in rulebase_item else u"with no name")).format(rulebase_item["type"],
+                                                                                                 rulebase_item["name"] if "name" in rulebase_item else "")
             debug_log(string)
             rulebase_rules.append(rulebase_item)
         elif "section" in rulebase_item["type"]:
             for rule in rulebase_item["rulebase"]:
-                string = ("##Show presented dependent rule of type {0} under section {1} " + ("with name {2}" if
-                          "name" in rule else "with no name")).format(rule["type"], rulebase_item["name"] if "name" in
+                string = (u"##Show presented dependent rule of type {0} under section {1} " + (u"with name {2}" if
+                          "name" in rule else u"with no name")).format(rule["type"], rulebase_item["name"] if "name" in
                           rulebase_item else "???", rule["name"] if "name" in rule else "")
                 debug_log(string)
                 rulebase_rules.append(rule)
 
-            string = ("##Show presented section of type {0} " + (
-                      "with name {1}" if "name" in rulebase_item else "with no name")).format(rulebase_item["type"],
+            string = (u"##Show presented section of type {0} " + (
+                      u"with name {1}" if "name" in rulebase_item else u"with no name")).format(rulebase_item["type"],
                       rulebase_item["name"] if "name" in rulebase_item else "")
             debug_log(string)
             rulebase_sections.append(rulebase_item)
