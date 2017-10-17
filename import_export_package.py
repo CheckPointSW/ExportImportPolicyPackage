@@ -28,7 +28,7 @@ if __name__ == "__main__":
         if args.login == '1':
             login_reply = client.login(username=args.username, password=args.password, domain=args.domain,
                                        payload={"read-only": "true" if args.operation == "export" else "false"})
-            handle_login_fail(not login_reply.success, "Login to management server failed!")
+            handle_login_fail(not login_reply.success, "Login to management server failed. " + str(login_reply))
         elif args.login == '2':
             client.login_as_root(domain=args.domain)
         elif args.login == '4':

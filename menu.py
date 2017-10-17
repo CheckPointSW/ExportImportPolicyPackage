@@ -41,7 +41,7 @@ class Menu:
                 display = False
         elif self.level == 1 and self.export:
             if not self.args.name:
-                self.title = "Please select a package to export:"
+                self.title = "Please enter a Policy Package name to export:"
                 self.options = []
             else:
                 self.level = 2
