@@ -254,11 +254,11 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
                     try:
                         debug_log("Failed to publish import of " + plural + " from tar file #" +
                                   str((counter / 100) + 1) + "! " + plural.capitalize() +
-                                  " from said file were not imported!. Error: " + publish_reply.error_message,
+                                  " from said file were not imported!. Error: " + str(publish_reply.error_message),
                                   True, True)
                     except UnicodeEncodeError:
                         try:
-                            debug_log("UnicodeEncodeError: " + publish_reply.error_message.encode('utf-8'), True, True)
+                            debug_log("UnicodeEncodeError: " + str(publish_reply.error_message), True, True)
                         except:
                             debug_log("UnicodeEncodeError: .encode('utf-8') FAILED", True, True)
 

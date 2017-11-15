@@ -22,7 +22,7 @@ def populate_parser(parser):
     parser.add_argument("-f", "--file", required=False, help="The path to the tar file containing the data to import")
     parser.add_argument("--all", required=False,
                         help="Indicates whether to export or import all types of layers", action="store_true")
-    parser.add_argument("-ac", "--access", required=False,
+    parser.add_argument("-ac", "--access", required=False, default=True,
                         help="Indicates whether to export or import the Access-Control layers", action="store_true")
     parser.add_argument("-tp", "--threat", required=False,
                         help="Indicates whether to export or import the Threat-Prevention layers", action="store_true")
@@ -33,7 +33,7 @@ def populate_parser(parser):
                         help="The management administrator's password.\nEnvironment variable: MGMT_CLI_PASSWORD")
     parser.add_argument("-m", "--management", required=False, default=os.getenv('MGMT_CLI_MANAGEMENT', "127.0.0.1"),
                         help="The management server's IP address (In the case of a Multi-Domain Environment, use the IP address of the MDS domain).\nDefault: 127.0.0.1\nEnvironment variable: MGMT_CLI_MANAGEMENT")
-    parser.add_argument("--port", "--server_port", required=False, default=os.getenv('MGMT_CLI_PORT', 443),
+    parser.add_argument("--port", "--server-port", required=False, default=os.getenv('MGMT_CLI_PORT', 443),
                         help="The port of the management server\nDefault: 443\nEnvironment variable: MGMT_CLI_PORT")
     parser.add_argument("--proxy", required=False, help="The proxy server")
     parser.add_argument("--proxy-port", required=False, help="The port of the proxy server")
@@ -205,11 +205,8 @@ def create_tar_file(layer_data, data_dict, timestamp, lst, api_version):
     layer_type = layer_data["type"].split("-")[0]
     layer_tar_name = "exported__" + layer_type + "_layer__" + layer_data["name"] + "__" + timestamp + ".tar.gz"
     # TODO AdamG What about with and IOException
-    tar = tarfile.open(layer_tar_name, "w:gz")
-
-    export_to_tar(data_dict, timestamp, tar, lst, api_version)
-
-    tar.close()
+    with tarfile.open(layer_tar_name, "w:gz") as tar:
+        export_to_tar(data_dict, timestamp, tar, lst, api_version)
     return layer_tar_name
 
 
@@ -218,21 +215,24 @@ def export_to_tar(data_dict, timestamp, tar, lst, api_version, ignore_list=None)
     for api_type in lst:
         if ignore_list and [x for x in ignore_list if x in api_type]:
             continue
-        if api_type in data_dict and data_dict[api_type]:
+        if data_dict.get(api_type):
             if singular_to_plural_dictionary[api_version][api_type] == "generic-object":
                 file_command = "add-generic-object-" + api_type
             else:
                 file_command = "add-" + api_type
             file_name_csv = str(counter).zfill(2) + "__" + "__" + file_command + "__" + timestamp + ".csv"
             file_name_json = str(counter).zfill(2) + "__" + "__" + file_command + "__" + timestamp + ".json"
-            tar_file_csv = open(file_name_csv, "wb")
-            tar_file_json = open(file_name_json, "wb")
-            write_data(data_dict[api_type], tar_file_csv, ".csv")
-            write_data(data_dict[api_type], tar_file_json, ".json")
-            tar.add(tar_file_csv.name)
-            tar.add(tar_file_json.name)
-            os.remove(tar_file_csv.name)
-            os.remove(tar_file_json.name)
+            with open(file_name_csv, "wb") as tar_file_csv, open(file_name_json, "wb") as tar_file_json:
+                write_data(data_dict[api_type], tar_file_csv, ".csv")
+                write_data(data_dict[api_type], tar_file_json, ".json")
+            tar.add(file_name_csv)
+            tar.add(file_name_json)
+            try:
+                os.remove(file_name_csv)
+                os.remove(file_name_json)
+            except WindowsError as err:
+                print(err, file=sys.stderr)
+
         counter += 1
 
 

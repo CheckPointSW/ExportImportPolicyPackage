@@ -2,9 +2,9 @@ from __future__ import print_function
 
 import argparse
 
+from cp_mgmt_api_python_sdk.lib import APIClientArgs
 from exporting.export_package import export_package
 from importing.import_package import import_package
-from cp_mgmt_api_python_sdk.lib import APIClientArgs
 from utils import process_arguments, extract_sid_from_session_file, handle_login_fail
 
 debug = None
@@ -31,14 +31,15 @@ if __name__ == "__main__":
             handle_login_fail(not login_reply.success, "Login to management server failed. " + str(login_reply))
         elif args.login == '2':
             client.login_as_root(domain=args.domain)
-        elif args.login == '4':
-            test_reply = client.api_call("show-hosts", {"limit": 1})
-            handle_login_fail(not test_reply.success, "Supplied SID is invalid!")
         elif args.login == '3':
             client.sid = extract_sid_from_session_file(args.session_file)
             handle_login_fail(not client.sid, "Could not extract SID form Session-File!")
             test_reply = client.api_call("show-hosts", {"limit": 1})
             handle_login_fail(not test_reply.success, "Extract SID is invalid!")
+
+        elif args.login == '4':
+            test_reply = client.api_call("show-hosts", {"limit": 1})
+            handle_login_fail(not test_reply.success, "Supplied SID is invalid!")
 
         if args.operation == "export":
             export_package(client, args)

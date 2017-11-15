@@ -235,7 +235,7 @@ no_export_fields_by_api_type = {
     "host": ["host-servers.web-server-config.standard-port-number", "subnet-mask"],
     "network": ["subnet-mask"],
     "threat-rule": ["exceptions"],
-    "simple-gateway": ["hardware", "dynamic-ip", "sic-name", "sic-state", "send-alerts-to-server",
+    "simple-gateway": ["forward-logs-to-log-server-schedule-name", "hardware", "dynamic-ip", "sic-name", "sic-state", "send-alerts-to-server",
                        "send-logs-to-backup-server", "send-logs-to-server", "interfaces"],
     "application-site": ["application-id", "risk", "user-defined"],
     "application-site-category": ["user-defined"]

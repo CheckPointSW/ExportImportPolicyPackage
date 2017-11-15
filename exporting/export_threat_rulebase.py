@@ -7,13 +7,13 @@ from exporting.export_threat_exception_rulebase import export_threat_exception_r
 from utils import debug_log
 
 
-def export_threat_rulebase(layer, client):
+def export_threat_rulebase(package, layer, client):
     data_dict = {}
 
     debug_log("Exporting Threat Layer [" + layer + "]", True)
 
     layer_settings, _, rulebase_rules, general_objects = \
-        get_query_rulebase_data(client, "threat-rulebase", {"name": layer})
+        get_query_rulebase_data(client, "threat-rulebase", {"name": layer, "package": package})
 
     if not layer_settings:
         return None, None
@@ -29,7 +29,7 @@ def export_threat_rulebase(layer, client):
         replace_rule_field_uids_by_name(rulebase_rule, general_objects)
         if "exceptions" in rulebase_rule:
             exceptions_data_dict, exceptions_unexportable_objects = \
-                export_threat_exception_rulebase(layer, rulebase_rule, exception_groups, client)
+                export_threat_exception_rulebase(package, layer, rulebase_rule, exception_groups, client)
             if not exceptions_data_dict:
                 continue
             merge_data(data_dict, exceptions_data_dict)

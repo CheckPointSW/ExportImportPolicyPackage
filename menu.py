@@ -87,6 +87,7 @@ class Menu:
             self.last_option = "Exit" if self.level == self.lowest_level else "Back"
         elif self.level == 3 and not self.export:
             self.title = "The script will run with the following parameters:\n" + \
+                         "Custom name for imported package (optional) = " + str(self.self_args.name) + "\n" + \
                          "Management Server IP = " + str(self.self_args.management) + "\n" + \
                          "Management Server Port = " + str(self.self_args.port) + "\n" + \
                          "Management Server Domain = " + str(self.self_args.domain)
@@ -98,7 +99,8 @@ class Menu:
             self.title = "Please select a setting to change:"
             self.options = [access_string + " export of Access-Control Rulebases",
                             threat_string + " export of Threat-Prevention Rulebases",
-                            "Change Management Server IP", "Change Management Server Port", "Change the domain name"]
+                            "Output file name", "Change Management Server IP", "Change Management Server Port",
+                            "Change the domain name"]
             self.last_option = "Exit" if self.level == self.lowest_level else "Back"
         elif self.level == 4 and not self.export:
             self.title = "Please select a setting to change:"
@@ -192,12 +194,15 @@ class Menu:
                         "Exporting of Threat-Prevention layers " + "enabled" if self.self_args.threat else "disabled",
                         2)
                 elif choice == 3:
+                    self.menu_print("Please enter the output file name:", 0)
+                    self.self_args.output_file = raw_input()
+                elif choice == 4:
                     self.menu_print("Please enter the IP address of the management server:", 0)
                     self.self_args.management = raw_input()
-                elif choice == 4:
+                elif choice == 5:
                     self.menu_print("Please enter the port on the management server to connect to:", 0)
                     self.self_args.port = raw_input()
-                elif choice == 5:
+                elif choice == 6:
                     self.menu_print("Please enter the IP address or name of the domain you wish to connect to:", 0)
                     self.self_args.domain = raw_input()
                 self.level = 3

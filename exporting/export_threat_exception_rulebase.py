@@ -5,7 +5,7 @@ from export_objects import get_objects, \
 from utils import debug_log
 
 
-def export_threat_exception_rulebase(layer, threat_rule, exception_groups, client):
+def export_threat_exception_rulebase(package, layer, threat_rule, exception_groups, client):
     data_dict = {}
 
     debug_log("Exporting Exception-Rulebase from Threat-Rule #" +

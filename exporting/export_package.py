@@ -35,7 +35,7 @@ def export_package(client, args):
             debug_log("Exporting Access Control layers", True)
             for access_layer in show_package.data["access-layers"]:
                 access_data_dict, access_unexportable_objects \
-                    = export_access_rulebase(access_layer["name"], client, timestamp, tar_file)
+                    = export_access_rulebase(show_package.data["name"], access_layer["name"], client, timestamp, tar_file)
                 if not access_data_dict:
                     continue
                 layer_tar_name = \
@@ -51,7 +51,7 @@ def export_package(client, args):
             debug_log("Exporting Threat-Prevention layers", True)
             for threat_layer in show_package.data["threat-layers"]:
                 threat_data_dict, threat_unexportable_objects \
-                    = export_threat_rulebase(threat_layer["name"], client)
+                    = export_threat_rulebase(show_package.data["name"], threat_layer["name"], client)
                 if not threat_data_dict:
                     continue
                 layer_tar_name = \
