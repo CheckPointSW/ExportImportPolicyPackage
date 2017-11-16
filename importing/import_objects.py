@@ -97,6 +97,8 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
         position_decrements_for_sections.append(position_decrement_due_to_rule)
 
     payload, _ = create_payload(fields, line, 0, api_type, client.api_version)
+    payload["ignore-warnings"] = True  # Useful for example when creating two hosts with the same IP
+
     if "position" in payload:
         if "rule" in api_type:
             payload["position"] = str(int(payload["position"]) - position_decrement_due_to_rule)
