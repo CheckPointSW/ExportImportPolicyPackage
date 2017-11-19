@@ -51,12 +51,9 @@ def get_query_rulebase_data(client, api_type, payload):
 
     debug_log("Getting information from show-" + api_type)
 
-    limit = 2
-    offset = 0
-    done = False
     seen_object_uids = []
 
-    for rulebase_reply in client.gen_api_query("show-" + api_type, details_level="standard", container_keys=["rulebase"],
+    for rulebase_reply in client.gen_api_query("show-" + api_type, details_level="full", container_keys=["rulebase"],
                                         payload={"name": payload["name"], "package": payload["package"]}):
         if not rulebase_reply.success:
             debug_log("Failed to retrieve layer named '" +
@@ -95,47 +92,6 @@ def get_query_rulebase_data(client, api_type, payload):
         seen_object_uids.extend([x["uid"] for x in new_objects])
         general_objects.extend(new_objects)
 
-    while not done:
-        rulebase_reply = client.api_call("show-" + api_type, {"name": payload["name"], "limit": limit, "offset": offset,
-                                                              "details-level": "full"})
-        if not rulebase_reply.success:
-            debug_log("Failed to retrieve layer named '" +
-                      payload["name"] + "'! Error: " + str(rulebase_reply.error_message) +
-                      ". Layer was not exported!", True, True)
-            return None, None, None, None
-        rulebase_data = rulebase_reply.data
-        if "total" not in rulebase_data or rulebase_data["total"] == 0:
-            break
-        if rulebase_data["to"] == rulebase_data["total"]:
-            done = True
-        percentage_complete = int((float(rulebase_data["to"]) / float(rulebase_data["total"])) * 100)
-        debug_log("Retrieved " + str(rulebase_data["to"]) +
-                  " out of " + str(rulebase_data["total"]) + " rules (" + str(percentage_complete) + "%)", True)
-
-        non_empty_rulebase_items = []
-        skipped_first_empty_section = False
-        for rulebase_item in rulebase_data["rulebase"]:
-            if not skipped_first_empty_section and "rule-number" not in rulebase_item and "to" not in rulebase_item:
-                continue
-            else:
-                skipped_first_empty_section = True
-            non_empty_rulebase_items.append(rulebase_item)
-            if ("rule-number" in rulebase_item and rulebase_item["rule-number"] == rulebase_data["to"]) or (
-                            "to" in rulebase_item and rulebase_item["to"] == rulebase_data["to"]):
-                break
-
-        if non_empty_rulebase_items and rulebase_items and non_empty_rulebase_items[0]["uid"] == \
-                rulebase_items[len(rulebase_items) - 1]["uid"]:
-            rulebase_items[len(rulebase_items) - 1]["rulebase"].extend(non_empty_rulebase_items[0]["rulebase"])
-            rulebase_items[len(rulebase_items) - 1]["to"] = non_empty_rulebase_items[0]["to"]
-            non_empty_rulebase_items = non_empty_rulebase_items[1:]
-        rulebase_items.extend(non_empty_rulebase_items)
-
-        new_objects = [x for x in rulebase_data["objects-dictionary"] if x["uid"] not in seen_object_uids]
-        seen_object_uids.extend([x["uid"] for x in new_objects])
-        general_objects.extend(new_objects)
-
-        offset += limit
 
     for general_object in general_objects:
         string = (u"##Show presented object of type {0} " + (
