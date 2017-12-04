@@ -13,7 +13,7 @@ def export_threat_exception_rulebase(package, layer, threat_rule, exception_grou
 
     layer_settings, rulebase_sections, rulebase_rules, general_objects = \
         get_query_rulebase_data(client, "threat-rule-exception-rulebase",
-                                {"name": layer, "rule-uid": threat_rule["uid"]})
+                                {"name": layer, "package": package, "rule-uid": threat_rule["uid"]})
 
     if not layer_settings:
         return None, None

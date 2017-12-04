@@ -52,9 +52,12 @@ def get_query_rulebase_data(client, api_type, payload):
     debug_log("Getting information from show-" + api_type)
 
     seen_object_uids = []
+	
+    queryPayload = {"name": payload["name"], "package": payload["package"]}
+    if api_type == "threat-rule-exception-rulebase":
+        queryPayload = {"name": payload["name"], "package": payload["package"], "rule-uid": payload["rule-uid"]}
 
-    for rulebase_reply in client.gen_api_query("show-" + api_type, details_level="full", container_keys=["rulebase"],
-                                        payload={"name": payload["name"], "package": payload["package"]}):
+    for rulebase_reply in client.gen_api_query("show-" + api_type, details_level="full", container_keys=["rulebase"], payload=queryPayload):
         if not rulebase_reply.success:
             debug_log("Failed to retrieve layer named '" +
                       payload["name"] + "'! Error: " + str(rulebase_reply.error_message) +
@@ -91,7 +94,6 @@ def get_query_rulebase_data(client, api_type, payload):
         new_objects = [x for x in rulebase_data["objects-dictionary"] if x["uid"] not in seen_object_uids]
         seen_object_uids.extend([x["uid"] for x in new_objects])
         general_objects.extend(new_objects)
-
 
     for general_object in general_objects:
         string = (u"##Show presented object of type {0} " + (
