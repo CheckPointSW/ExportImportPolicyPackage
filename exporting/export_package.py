@@ -38,6 +38,12 @@ def export_package(client, args):
                     = export_access_rulebase(show_package.data["name"], access_layer["name"], client, timestamp, tar_file)
                 if not access_data_dict:
                     continue
+                #---> This code segment distinguishes between an inline layer and an ordered layer during export
+                access_layers = access_data_dict.get("access-layer")
+                if access_layers is not None:
+                    for layer in access_layers:
+                        layer["__ordered_access_control_layer"] = True if layer["name"] == access_layer["name"] else False
+                #<--- end of code segment
                 layer_tar_name = \
                     create_tar_file(access_layer, access_data_dict,
                                     timestamp, ["access-rule", "access-section"], client.api_version)

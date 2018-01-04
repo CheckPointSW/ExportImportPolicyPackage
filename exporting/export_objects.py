@@ -30,7 +30,7 @@ def get_query_rulebase_data(client, api_type, payload):
                           "uid": layer_data["uid"],
                           "color": layer_data["color"],
                           "comments": layer_data["comments"],
-                          "applications-and-url-filtering": 'True',  # layer_data["applications-and-url-filtering"],
+                          "applications-and-url-filtering": layer_data["applications-and-url-filtering"],
                           "mobile-access": layer_data["mobile-access"],
                           "firewall": layer_data["firewall"],
                           "type": "access-layer"}
