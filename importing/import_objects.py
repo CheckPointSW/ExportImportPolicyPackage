@@ -124,7 +124,12 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
             payload["add-default-rule"] = "false"
         if layer is None:
             if "access-layer" in api_type:
-                layers_to_attach["access"].append(payload["name"])
+                #---> This code segment distinguishes between an inline layer and an ordered layer during import
+                is_ordered_access_control_layer = payload["__ordered_access_control_layer"]
+                payload.pop("__ordered_access_control_layer", None)
+                if "true" in is_ordered_access_control_layer:
+                    layers_to_attach["access"].append(payload["name"])   # ordered access layer
+                #<--- end of code segment
             else:
                 layers_to_attach["threat"].append(payload["name"])
     elif "rule" in api_type or "section" in api_type or \
