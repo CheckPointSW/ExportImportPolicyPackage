@@ -57,7 +57,9 @@ def get_query_rulebase_data(client, api_type, payload):
     if api_type == "threat-rule-exception-rulebase":
         queryPayload = {"name": payload["name"], "package": payload["package"], "rule-uid": payload["rule-uid"]}
 
-    for rulebase_reply in client.gen_api_query("show-" + api_type, details_level="full", container_keys=["rulebase"], payload=queryPayload):
+    rulebase_replies = client.gen_api_query("show-" + api_type, details_level="full", container_keys=["rulebase"], payload=queryPayload)
+
+    for rulebase_reply in rulebase_replies:
         if not rulebase_reply.success:
             debug_log("Failed to retrieve layer named '" +
                       payload["name"] + "'! Error: " + str(rulebase_reply.error_message) +
@@ -122,10 +124,19 @@ def get_query_rulebase_data(client, api_type, payload):
                 debug_log(string)
                 rulebase_rules.append(rule)
 
+            # Because of 50 items chunks per API query reply, one rule section may spread over several chunks!!!
+            same_section = False
+            for section in rulebase_sections:
+                if section["uid"] == rulebase_item["uid"]:
+                    section["to"] = rulebase_item["to"]
+                    same_section = True
+                    break
+            if same_section:
+                continue
+
             string = (u"##Show presented section of type {0} " + (
-                u"with name {1}" if "name" in rulebase_item else u"with no name")).format(rulebase_item["type"],
-                                                                                          rulebase_item[
-                                                                                              "name"] if "name" in rulebase_item else "")
+                u"with name {1}" if "name" in rulebase_item else u"with no name")).format(
+                    rulebase_item["type"], rulebase_item["name"] if "name" in rulebase_item else "")
             debug_log(string)
             rulebase_sections.append(rulebase_item)
         else:
