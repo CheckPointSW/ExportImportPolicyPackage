@@ -127,7 +127,7 @@ def get_query_rulebase_data(client, api_type, payload):
             # Because of 50 items chunks per API query reply, one rule section may spread over several chunks!!!
             same_section = False
             for section in rulebase_sections:
-                if section["uid"] == rulebase_item["uid"]:
+                if section["uid"] == rulebase_item["uid"] and  "to" in section and "to" in rulebase_item:
                     section["to"] = rulebase_item["to"]
                     same_section = True
                     break
