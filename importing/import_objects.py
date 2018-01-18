@@ -8,6 +8,9 @@ from utils import debug_log, create_payload, compare_versions, generate_new_dumm
 duplicates_dict = {}
 position_decrements_for_sections = []
 missing_parameter_set = set()
+should_create_imported_nat_top_section = True
+should_create_imported_nat_bottom_section = True
+imported_nat_top_section_uid = None
 
 
 def import_objects(file_name, client, changed_layer_names, layer=None):
@@ -92,6 +95,9 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
     global duplicates_dict
     global position_decrements_for_sections
     global missing_parameter_set
+    global should_create_imported_nat_top_section
+    global should_create_imported_nat_bottom_section
+    global imported_nat_top_section_uid
 
     if "access-rule" in api_type:
         position_decrements_for_sections.append(position_decrement_due_to_rule)
@@ -99,50 +105,91 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
     payload, _ = create_payload(fields, line, 0, api_type, client.api_version)
     payload["ignore-warnings"] = True  # Useful for example when creating two hosts with the same IP
 
-    if "position" in payload:
-        if "rule" in api_type:
-            payload["position"] = str(int(payload["position"]) - position_decrement_due_to_rule)
-            if payload["action"] == "Drop":
-                if "action-settings" in payload:
-                    payload.pop("action-settings")
-                if "user-check" in payload:
-                    if "frequency" in payload["user-check"]:
-                        payload["user-check"].pop("frequency")
-                    if "custom-frequency" in payload["user-check"]:
-                        payload["user-check"].pop("custom-frequency")
-                    if "confirm" in payload["user-check"]:
-                        payload["user-check"].pop("confirm")
-        if "section" in api_type:
-            section_position_decrement = (position_decrements_for_sections[int(payload["position"]) - 1] if len(
-                position_decrements_for_sections) > 0 else 0) + position_decrement_due_to_section
-            payload["position"] = str(int(payload["position"]) - section_position_decrement)
-    if generic_type:
-        payload["create"] = generic_type
-    if "layer" in api_type:
-        check_duplicate_layer(payload, changed_layer_names, api_type, client)
-        if compare_versions(client.api_version, "1.1") != -1:
-            payload["add-default-rule"] = "false"
-        if layer is None:
-            if "access-layer" in api_type:
-                #---> This code segment distinguishes between an inline layer and an ordered layer during import
-                is_ordered_access_control_layer = payload["__ordered_access_control_layer"]
-                payload.pop("__ordered_access_control_layer", None)
-                if "true" in is_ordered_access_control_layer:
-                    layers_to_attach["access"].append(payload["name"])   # ordered access layer
-                #<--- end of code segment
+    if "nat-rule" in api_type:
+        # For NAT rules, the 'layer' parameter is the name of the policy package!!!
+        payload["package"] = layer
+        # --- NAT rules specific logic ---
+        # Importing only rules, without sections.
+        # Rules marked as "__before_auto_rules = TRUE" will be imported at the TOP of the rulebase, inside a new section "IMPORTED UPPER RULES".
+        # There is an additional new section "Original Upper Rules" at the bottom of "IMPORTED UPPER RULES".
+        # Rules marked as "__before_auto_rules = FALSE" will be imported at the BOTTOM of the rulebase, inside a new section "IMPORTED LOWER RULES".
+        # There will be no rule merges!!!
+        before_auto_rules = payload["__before_auto_rules"]
+        payload.pop("__before_auto_rules", None)
+        if "true" in before_auto_rules:
+            if should_create_imported_nat_top_section:
+                should_create_imported_nat_top_section = False
+                nat_section_payload = {}
+                nat_section_payload["package"] = layer
+                nat_section_payload["position"] = "top"
+                # --> we add the footer section first!!!
+                nat_section_payload["name"] = "Original Upper Rules"
+                client.api_call("add-nat-section", nat_section_payload)
+                # <--
+                nat_section_payload["name"] = "IMPORTED UPPER RULES"
+                nat_section_reply = client.api_call("add-nat-section", nat_section_payload)
+                if nat_section_reply.success:
+                    imported_nat_top_section_uid = nat_section_reply.data["uid"]
+            if imported_nat_top_section_uid is None:
+                payload["position"] = "bottom"
             else:
-                layers_to_attach["threat"].append(payload["name"])
-    elif "rule" in api_type or "section" in api_type or \
-            (api_type == "threat-exception" and "exception-group-name" not in payload):
-        payload["layer"] = layer
-        if client.api_version != "1" and api_type == "access-rule" and "track-alert" in payload:
-            payload["track"] = {}
-            payload["track"]["alert"] = payload["track-alert"]
-            payload.pop("track-alert", None)
-    elif api_type == "exception-group" and "applied-threat-rules" in payload:
-        for applied_rule in payload["applied-threat-rules"]:
-            if applied_rule["layer"] in changed_layer_names.keys():
-                applied_rule["layer"] = changed_layer_names[applied_rule["layer"]]
+                sub_payload = {}
+                sub_payload["bottom"] = imported_nat_top_section_uid
+                payload["position"] = sub_payload
+        else:
+            if should_create_imported_nat_bottom_section:
+                should_create_imported_nat_bottom_section = False
+                nat_section_payload = {}
+                nat_section_payload["package"] = layer
+                nat_section_payload["position"] = "bottom"
+                nat_section_payload["name"] = "IMPORTED LOWER RULES"
+                client.api_call("add-nat-section", nat_section_payload)
+            payload["position"] = "bottom"
+    else:
+        if "position" in payload:
+            if "rule" in api_type:
+                payload["position"] = str(int(payload["position"]) - position_decrement_due_to_rule)
+                if payload["action"] == "Drop":
+                    if "action-settings" in payload:
+                        payload.pop("action-settings")
+                    if "user-check" in payload:
+                        if "frequency" in payload["user-check"]:
+                            payload["user-check"].pop("frequency")
+                        if "custom-frequency" in payload["user-check"]:
+                            payload["user-check"].pop("custom-frequency")
+                        if "confirm" in payload["user-check"]:
+                            payload["user-check"].pop("confirm")
+            if "section" in api_type:
+                section_position_decrement = (position_decrements_for_sections[int(payload["position"]) - 1] if len(
+                    position_decrements_for_sections) > 0 else 0) + position_decrement_due_to_section
+                payload["position"] = str(int(payload["position"]) - section_position_decrement)
+        if generic_type:
+            payload["create"] = generic_type
+        if "layer" in api_type:
+            check_duplicate_layer(payload, changed_layer_names, api_type, client)
+            if compare_versions(client.api_version, "1.1") != -1:
+                payload["add-default-rule"] = "false"
+            if layer is None:
+                if "access-layer" in api_type:
+                    #---> This code segment distinguishes between an inline layer and an ordered layer during import
+                    is_ordered_access_control_layer = payload["__ordered_access_control_layer"]
+                    payload.pop("__ordered_access_control_layer", None)
+                    if "true" in is_ordered_access_control_layer:
+                        layers_to_attach["access"].append(payload["name"])   # ordered access layer
+                    #<--- end of code segment
+                else:
+                    layers_to_attach["threat"].append(payload["name"])
+        elif "rule" in api_type or "section" in api_type or \
+                (api_type == "threat-exception" and "exception-group-name" not in payload):
+            payload["layer"] = layer
+            if client.api_version != "1" and api_type == "access-rule" and "track-alert" in payload:
+                payload["track"] = {}
+                payload["track"]["alert"] = payload["track-alert"]
+                payload.pop("track-alert", None)
+        elif api_type == "exception-group" and "applied-threat-rules" in payload:
+            for applied_rule in payload["applied-threat-rules"]:
+                if applied_rule["layer"] in changed_layer_names.keys():
+                    applied_rule["layer"] = changed_layer_names[applied_rule["layer"]]
 
     api_reply = client.api_call(api_call, payload)
 
