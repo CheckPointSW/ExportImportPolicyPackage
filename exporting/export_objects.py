@@ -142,6 +142,91 @@ def get_query_rulebase_data(client, api_type, payload):
     return layer_settings, rulebase_sections, rulebase_rules, general_objects
 
 
+def get_query_nat_rulebase_data(client, payload):
+    rulebase_items = []
+    rulebase_rules = []
+    general_objects = []
+    seen_object_uids = []
+    before_auto_rules = True
+
+    debug_log("Getting information from show-nat-rulebase", True)
+
+    rulebase_replies = client.gen_api_query("show-nat-rulebase", details_level="full", container_keys=["rulebase"], payload=payload)
+
+    for rulebase_reply in rulebase_replies:
+        if not rulebase_reply.success:
+            debug_log("Failed to retrieve NAT rulebase! Error: " + str(rulebase_reply.error_message) +
+                      ". NAT rulebase was not exported!", True, True)
+            return None, None
+        rulebase_data = rulebase_reply.data
+        if "total" not in rulebase_data or rulebase_data["total"] == 0:
+            break
+        percentage_complete = int((float(rulebase_data["to"]) / float(rulebase_data["total"])) * 100)
+        debug_log("Retrieved " + str(rulebase_data["to"]) +
+                  " out of " + str(rulebase_data["total"]) + " rules (" + str(percentage_complete) + "%)", True)
+
+        non_empty_rulebase_items = []
+        for rulebase_item in rulebase_data["rulebase"]:
+            if "nat-section" in rulebase_item["type"]:
+                # Skip system auto generated section
+                if "Automatic Generated Rules : " in rulebase_item["name"]:
+                    before_auto_rules = False
+                    continue
+                # Skip empty section (no rules inside...)
+                if "from" not in rulebase_item:
+                    continue
+            rulebase_item["__before_auto_rules"] = before_auto_rules
+            non_empty_rulebase_items.append(rulebase_item)
+            if ("to" in rulebase_item and rulebase_item["to"] == rulebase_data["to"]):
+                break
+
+        if non_empty_rulebase_items and rulebase_items and non_empty_rulebase_items[0]["uid"] == \
+                rulebase_items[len(rulebase_items) - 1]["uid"]:
+            rulebase_items[len(rulebase_items) - 1]["rulebase"].extend(non_empty_rulebase_items[0]["rulebase"])
+            rulebase_items[len(rulebase_items) - 1]["to"] = non_empty_rulebase_items[0]["to"]
+            non_empty_rulebase_items = non_empty_rulebase_items[1:]
+        rulebase_items.extend(non_empty_rulebase_items)
+
+        new_objects = [x for x in rulebase_data["objects-dictionary"] if x["uid"] not in seen_object_uids]
+        seen_object_uids.extend([x["uid"] for x in new_objects])
+        general_objects.extend(new_objects)
+
+    for general_object in general_objects:
+        string = (u"##Show presented object of type {0} " + (
+            u"with name {1}" if "name" in general_object else u"with no name")).format(
+            general_object["type"], general_object["name"] if "name" in general_object else "")
+        debug_log(string)
+        if should_export(general_object):
+            check_for_export_error(general_object, client)
+
+    debug_log("Analysing rulebase items...")
+    for rulebase_item in rulebase_items:
+        if "nat-rule" in rulebase_item["type"]:
+            string = (u"##Show presented independent rule of type {0}").format(rulebase_item["type"])
+            debug_log(string)
+            rulebase_item.pop("auto-generated", None)
+            rulebase_rules.append(rulebase_item)
+        elif "nat-section" in rulebase_item["type"]:
+            # !!! Attention: exporting only NAT rules, without sections !!!
+            for rule in rulebase_item["rulebase"]:
+                string = (u"##Show presented dependent rule of type {0} under section {1}").format(
+                    rule["type"], rulebase_item["name"] if "name" in rulebase_item else "???")
+                debug_log(string)
+                rule.pop("auto-generated", None)
+                rule["__before_auto_rules"] = rulebase_item["__before_auto_rules"]
+                rulebase_rules.append(rule)
+
+            string = (u"##Show presented section of type {0} " + (
+                u"with name {1}" if "name" in rulebase_item else u"with no name")).format(
+                    rulebase_item["type"], rulebase_item["name"] if "name" in rulebase_item else "")
+            debug_log(string)
+        else:
+            debug_log("Unsupported NAT rulebase object type - '" + rulebase_item["type"] + "'. Continue...",
+                      print_to_error_log=True)
+
+    return rulebase_rules, general_objects
+
+
 def replace_rule_field_uids_by_name(rule, general_objects):
     # This 'if' prevents the rare situations where this method is called on the same rule more than once
     if "position" in rule:
