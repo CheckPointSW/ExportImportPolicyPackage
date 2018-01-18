@@ -125,13 +125,9 @@ def get_query_rulebase_data(client, api_type, payload):
                 rulebase_rules.append(rule)
 
             # Because of 50 items chunks per API query reply, one rule section may spread over several chunks!!!
-            same_section = False
-            for section in rulebase_sections:
-                if section["uid"] == rulebase_item["uid"]:
-                    section["to"] = rulebase_item["to"]
-                    same_section = True
-                    break
-            if same_section:
+            if rulebase_sections and rulebase_sections[len(rulebase_sections) - 1]["uid"] == rulebase_item["uid"]:
+                if "to" in rulebase_item:
+                    rulebase_sections[len(rulebase_sections) - 1]["to"] = rulebase_item["to"]
                 continue
 
             string = (u"##Show presented section of type {0} " + (
