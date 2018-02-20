@@ -74,7 +74,6 @@ def process_arguments(parser):
     global debug
     global err_msgs
     global log_file
-    global output_file
 
     debug = args.debug
     err_msgs = []
@@ -88,8 +87,6 @@ def process_arguments(parser):
                       True)
     else:
         log_file = None
-
-    output_file = open(args.output_file, "wb") if args.output_file else None
 
     return args
 
