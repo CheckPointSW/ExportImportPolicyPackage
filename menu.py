@@ -3,6 +3,9 @@ from __future__ import print_function
 import copy
 import sys
 
+# A package for reading passwords without displaying them on the console.
+import getpass
+
 
 class Menu:
     def __init__(self, args):
@@ -117,7 +120,8 @@ class Menu:
                 display = False
         elif self.level == 6:
             if not self.args.password:
-                self.title = "Please enter your password:"
+                # The menu title will be provided at the password prompt
+                self.title = ""
                 self.options = []
             else:
                 return
@@ -232,8 +236,11 @@ class Menu:
             self.level = 6
         elif self.level == 6:
             if not self.self_args.password:
-                print("Attention! Your password will be shown on the screen!", file=sys.stderr)
-                self.self_args.password = raw_input()
+                if sys.stdin.isatty():
+                    self.self_args.password = getpass.getpass("Please enter your password:\n")
+                else:
+                    print("Attention! Your password will be shown on the screen!", file=sys.stderr)
+                    self.self_args.password = raw_input("Please enter your password:\n")
             return
         self.build()
 
