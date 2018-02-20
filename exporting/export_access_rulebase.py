@@ -7,13 +7,13 @@ from export_objects import get_objects, \
 from utils import debug_log, create_tar_file
 
 
-def export_access_rulebase(package, layer, client, timestamp, tar_file):
+def export_access_rulebase(package, layer, layer_uid, client, timestamp, tar_file):
     data_dict = {}
 
     debug_log("Exporting Access Layer [" + layer + "]", True)
 
     layer_settings, rulebase_sections, rulebase_rules, general_objects = \
-        get_query_rulebase_data(client, "access-rulebase", {"name": layer, "package": package})
+        get_query_rulebase_data(client, "access-rulebase", {"name": layer, "uid": layer_uid, "package": package})
 
     if not layer_settings:
         return None, None
@@ -41,7 +41,7 @@ def export_access_rulebase(package, layer, client, timestamp, tar_file):
         for access_layer in object_dictionary["access-layer"]:
             debug_log("Exporting Inline-Layer [" + access_layer["name"] + "]", True)
             inner_data_dict, inner_unexportable_objects = \
-                export_access_rulebase(package, access_layer["name"], client, timestamp, tar_file)
+                export_access_rulebase(package, access_layer["name"], access_layer["uid"], client, timestamp, tar_file)
             layer_tar_name = \
                 create_tar_file(access_layer, inner_data_dict,
                                 timestamp, ["access-rule", "access-section"], client.api_version)

@@ -16,7 +16,8 @@ def get_query_rulebase_data(client, api_type, payload):
     general_objects = []
 
     debug_log("Getting layer information for layer [" + payload["name"] + "]")
-    layer_reply = client.api_call("show-" + api_type.split("-")[0] + "-layer", {"name": payload["name"]})
+    # We use here uid instead of name for supporting MDS env.
+    layer_reply = client.api_call("show-" + api_type.split("-")[0] + "-layer", {"uid": payload["uid"]})
     if not layer_reply.success:
         debug_log("Failed to retrieve layer named '" +
                   payload["name"] + "'! Error: " + str(layer_reply.error_message) +
@@ -52,10 +53,11 @@ def get_query_rulebase_data(client, api_type, payload):
     debug_log("Getting information from show-" + api_type)
 
     seen_object_uids = []
-	
-    queryPayload = {"name": payload["name"], "package": payload["package"]}
+
+    # We use here uid instead of name for supporting MDS env.
+    queryPayload = {"uid": payload["uid"], "package": payload["package"]}
     if api_type == "threat-rule-exception-rulebase":
-        queryPayload = {"name": payload["name"], "package": payload["package"], "rule-uid": payload["rule-uid"]}
+        queryPayload = {"uid": payload["uid"], "package": payload["package"], "rule-uid": payload["rule-uid"]}
 
     rulebase_replies = client.gen_api_query("show-" + api_type, details_level="full", container_keys=["rulebase"], payload=queryPayload)
 

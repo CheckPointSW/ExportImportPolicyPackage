@@ -5,7 +5,7 @@ from export_objects import get_objects, \
 from utils import debug_log
 
 
-def export_threat_exception_rulebase(package, layer, threat_rule, exception_groups, client):
+def export_threat_exception_rulebase(package, layer, layer_uid, threat_rule, exception_groups, client):
     data_dict = {}
 
     debug_log("Exporting Exception-Rulebase from Threat-Rule #" +
@@ -13,7 +13,7 @@ def export_threat_exception_rulebase(package, layer, threat_rule, exception_grou
 
     layer_settings, rulebase_sections, rulebase_rules, general_objects = \
         get_query_rulebase_data(client, "threat-rule-exception-rulebase",
-                                {"name": layer, "package": package, "rule-uid": threat_rule["uid"]})
+                                {"name": layer, "uid": layer_uid, "package": package, "rule-uid": threat_rule["uid"]})
 
     if not layer_settings:
         return None, None
