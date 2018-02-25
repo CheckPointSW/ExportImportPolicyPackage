@@ -251,14 +251,26 @@ def write_data(json_data, out_file, file_format, close_file=True):
 def flat_json_to_csv(json_data):
     global attribute_export_error_num
 
+    # We use a special_keys container for access rule's source, destination and service fields.
+    # We want to sort these keys natural way!!!
     keys = []
+    special_keys = []
+
     for item in json_data:
         for key in item:
-            if key not in keys:
+            sKey = str(key)
+            if sKey.startswith('source.', 0) or sKey.startswith('destination.', 0) or sKey.startswith('service.', 0):
+                if key not in special_keys:
+                    special_keys.append(key)
+            elif key not in keys:
                 keys.append(key)
 
     keys.sort()
+    special_keys.sort(natural_sort_cmp)
+
+    keys.extend(special_keys)
     res = [keys]
+
     for item in json_data:
         lst = []
         for key in keys:
@@ -278,7 +290,16 @@ def flat_json_to_csv(json_data):
                     attribute_export_error_num += 1
             lst.append(string)
         res.append(lst)
+
     return res
+
+
+def natural_sort_key(astr):
+    return [int(s) if s.isdigit() else s for s in re.split(r'(\d+)', astr)]
+
+
+def natural_sort_cmp(s1, s2):
+    return cmp(natural_sort_key(s1), natural_sort_key(s2))
 
 
 def flatten_json(json_node):
@@ -310,13 +331,6 @@ def merge_flat_data(json_node, flat_json, key):
         for sub_key in flat_json_of_key:
             flat_json[str(key) + "." + str(sub_key)] = flat_json_of_key[sub_key]
     return flat_json
-
-
-def match_key(key, pattern):
-    if isinstance(pattern, basestring):
-        return re.search(re.escape(pattern) if isinstance(pattern, unicode) else pattern, key)
-    else:
-        return pattern.search(key)
 
 
 def merge_data(destination, source):
