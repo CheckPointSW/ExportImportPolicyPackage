@@ -23,6 +23,10 @@ def import_package(client, args):
     else:
         package = args.name
 
+    if len(package) == 0:
+        debug_log("A package name for import was not provided!", True, True)
+        sys.exit(1)
+
     debug_log("Checking if package already exists...")
     show_package = client.api_call("show-package", {"name": package, "details-level": "full"})
     if "code" in show_package.data and "not_found" in show_package.data["code"]:
