@@ -3,6 +3,8 @@ Check Point ExportImportPolicyPackage tool enables you to export a policy packag
 
 This tool can be used for backups, database transfers, testing, and more.
 
+#### In the case you are exporting a policy package from a CMA, please verify that a global policy was NOT assigned to that CMA. The tool doesn't support exporting a policy with global policy assigned!
+
 ## Description
 This tool enables you to export a policy package (Access Policy, Threat Policy or both) from a Management database into a .tar.gz file.
 
