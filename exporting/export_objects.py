@@ -340,8 +340,7 @@ def format_objects(objects):
         flat_json = flatten_json(objects[i])
 
         string = u"Exporting {0} with uid {1} named {2}" if "name" in objects[i] else u"Exporting {0} with uid {1}"
-        message = string.format(api_type, objects[i]["uid"], objects[i]["name"] if 'name' in objects[i] else "").encode(
-            "utf-8")
+        message = string.format(api_type, objects[i]["uid"], objects[i]["name"] if 'name' in objects[i] else "").encode("utf-8")
         debug_log(message)
 
         formatted_objects.append(flat_json)
@@ -372,8 +371,14 @@ def format_and_merge_unexportable_objects(data_dict, unexportable_objects):
 
 
 def get_group_objects(data_dict, api_type, group, client, unexportable_objects):
-    group_object = client.api_call("show-" + api_type, {"uid": group["uid"],
-                                                        "details-level": "full"}).data
+    group_object_reply = client.api_call("show-" + api_type, {"uid": group["uid"], "details-level": "full"})
+    if not group_object_reply.success:
+        debug_log("Failed to retrieve group named '" +
+                  group["name"] + "'! Error: " + str(group_object_reply.error_message) +
+                  ". Group was not exported!", True, True)
+        return []
+
+    group_object = group_object_reply.data
 
     if api_type == "group-with-exclusion":
         include_group_object = None
@@ -416,9 +421,8 @@ def get_group_objects(data_dict, api_type, group, client, unexportable_objects):
                     break
 
     for api_type in exportable_types:
-        debug_log("Exporting " + singular_to_plural_dictionary[client.api_version][api_type] + " from group [" + group[
-            "name"] + "]", True)
-
+        debug_log("Exporting " + singular_to_plural_dictionary[client.api_version][api_type] + 
+                  " from group [" + group["name"] + "]", True)
         export_general_objects(data_dict, api_type, object_dictionary[api_type], unexportable_objects, client)
 
     return [group_object]
