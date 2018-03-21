@@ -232,7 +232,7 @@ no_export_fields_and_subfields = ["read-only", "layer", "package", "owner", "ico
                                   "domain", "from", "to", "rulebase", "uid", "meta-info", "parent", "groups"]
 
 no_export_fields_by_api_type = {
-    "host": ["host-servers.web-server-config.standard-port-number", "subnet-mask", "type"],
+    "host": ["standard-port-number", "subnet-mask", "type"],
     "network": ["subnet-mask"],
     "threat-rule": ["exceptions"],
     "simple-gateway": ["forward-logs-to-log-server-schedule-name", "hardware", "dynamic-ip", "sic-name", "sic-state", "send-alerts-to-server",
