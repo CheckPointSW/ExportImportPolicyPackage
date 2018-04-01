@@ -66,6 +66,7 @@ def import_objects(file_name, client, changed_layer_names, layer=None):
                 line = next(reader, None)
                 if line is None:
                     break
+                line = [unicode(item, 'utf-8') for item in line]
                 data.append(line)
 
         os.remove(general_object_file.name)
@@ -289,8 +290,8 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
 
         debug_log(log_err_msg, True, True)
     else:
-        debug_log("Imported {0}{1}".format(api_type, " with name [" + payload[
-            "name"] + "]" if "name" in payload else ""))
+        imported_name = payload["name"] if "name" in payload else ""
+        debug_log("Imported {0}{1}".format(api_type, " with name [" + imported_name.encode("utf-8") + "]"))
         if counter % 20 == 0 or counter == num_objects:
             percentage = int(float(counter) / float(num_objects) * 100)
             debug_log("Imported {0} out of {1} {2} ({3}%)".format(counter, num_objects,
