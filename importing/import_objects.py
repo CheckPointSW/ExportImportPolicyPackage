@@ -268,19 +268,25 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
         elif "is not unique" in api_reply.error_message and "name" in api_reply.error_message:
             field_value = api_reply.error_message.partition("name")[2].split("[")[1].split("]")[0]
             debug_log("Not unique name problem \"%s\" - changing payload to use UID instead." % field_value, True, True)
+            obj_uid_found_and_used = False
             if field_value not in duplicates_dict:
-                show_objects_reply = client.api_call("show-objects",
+                show_objects_reply = client.api_query("show-objects",
                                                      payload={"in": ["name", "\"" + field_value + "\""]})
-                for obj in show_objects_reply.data["objects"]:
-                    if obj["name"] == field_value:
-                        duplicates_dict[field_value] = obj["uid"]
-            indices_of_field = [i for i, x in enumerate(line) if x == field_value]
-            field_keys = [x for x in fields if fields.index(x) in indices_of_field]
-            for field_key in field_keys:
-                line[fields.index(field_key)] = duplicates_dict[field_value]
-            return add_object(line, counter, position_decrement_due_to_rule, position_decrement_due_to_section, fields,
-                              api_type, generic_type, layer, layers_to_attach,
-                              changed_layer_names, api_call, num_objects, client)
+                if show_objects_reply.success:
+                    for obj in show_objects_reply.data:
+                        if obj["name"] == field_value:
+                            duplicates_dict[field_value] = obj["uid"]
+                            obj_uid_found_and_used = True
+            if obj_uid_found_and_used:
+                indices_of_field = [i for i, x in enumerate(line) if x == field_value]
+                field_keys = [x for x in fields if fields.index(x) in indices_of_field]
+                for field_key in field_keys:
+                    line[fields.index(field_key)] = duplicates_dict[field_value]
+                return add_object(line, counter, position_decrement_due_to_rule, position_decrement_due_to_section, fields,
+                                  api_type, generic_type, layer, layers_to_attach,
+                                  changed_layer_names, api_call, num_objects, client)
+            else:
+                debug_log("Not unique name problem \"%s\" - cannot change payload to use UID instead of name." % field_value, True, True)
         elif "will place the exception in an Exception-Group" in api_reply.error_message:
             return add_object(line, counter, position_decrement_due_to_rule - 1, position_decrement_due_to_section,
                               fields, api_type, generic_type, layer, layers_to_attach,
