@@ -16,7 +16,7 @@ from cp_mgmt_api_python_sdk.lib import APIClient
 
 if __name__ == "__main__":
 
-    arg_parser = argparse.ArgumentParser(description="Package Import and Export Tool, V2.0")
+    arg_parser = argparse.ArgumentParser(description="R80.X Policy Package Export/Import Tool, V3.0")
     args = process_arguments(arg_parser)
     args_for_client = APIClientArgs(server=args.management, port=args.port,
                                     sid=args.session_id, debug_file=log_file, api_version=args.version,
