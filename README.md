@@ -19,7 +19,7 @@ or by clicking the Download ZIP button. In this case, the "cp_mgmt_api_python_sd
 
 To export a package, run the import_export_package.py script. An interactive menu will guide you the rest of the way. Command line flags may also be set in order to skip some or all of the menu.
 
-#### A lot more details can of course be accessed with the '-h' option.
+#### A lot more details can of course be accessed with the '-h' option. This option also prints the current version of the tool.
 
 ## Development Environment
 The tool is developed using Python language version 2.7.9 and [Check Point API Python SDK.](https://github.com/CheckPoint-APIs-Team/cpapi-python-sdk)
