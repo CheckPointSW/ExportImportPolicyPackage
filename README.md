@@ -1,5 +1,5 @@
 # ExportImportPolicyPackage
-Check Point ExportImportPolicyPackage tool enables you to export a policy package from a R80.x Management database to a .tar.gz file, which can then be imported into any other R80.x Management database. The tool is supported for version R80.10 and above.
+Check Point ExportImportPolicyPackage tool enables you to export a policy package from a Management database to a .tar.gz file, which can then be imported into any other Management database. The tool is supported for version R80.10 and above.
 
 This tool can be used for backups, database transfers, testing, and more.
 
