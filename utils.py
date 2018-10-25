@@ -402,7 +402,8 @@ def create_payload(fields, data, data_index, api_type, version):
             if main_field in seen_fields:
                 continue
             seen_fields.append(main_field)
-            sub_fields = [x.split(".", 1)[1] for x in fields if main_field + "." in x]
+            main_field_with_dot = main_field + "."
+            sub_fields = [x.split(".", 1)[1] for x in fields if x.startswith(main_field_with_dot)]
             sub_fields_prefix, sub_fields_suffix = sub_fields[0].split(".")[0], sub_fields[0].split(".")[1:]
             if sub_fields_prefix.isdigit():
                 payload[main_field] = []
