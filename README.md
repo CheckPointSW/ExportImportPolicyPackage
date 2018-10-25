@@ -9,7 +9,9 @@ This tool can be used for backups, database transfers, testing, and more.
 This tool enables you to export a policy package (Access Policy, Threat Policy or both) from a Management database into a .tar.gz file.
 
 Notice:
+
 There are some types of objects that the script might not be able to export. In such a case, an appropriate dummy object will be exported instead, and a message will be logged into the log files to notify you of this. In the Check Point SmartConsole you can easily replace each of these objects by searching "export_error" in the search field, see where each object is used, create the necessary object manually, then replace it.
+
 In addition, processing of Data Center Object and Updatable Object types is not supported.
 
 ## Instructions
