@@ -339,6 +339,11 @@ def format_objects(objects):
             handle_fields(objects[i])
         flat_json = flatten_json(objects[i])
 
+        # Special handling for data-center-object types - prepare the data for the import!
+        if "data-center-object" in api_type:
+            if "data-center.name" in flat_json.keys():
+                flat_json["data-center-name"] = flat_json["data-center.name"]
+
         string = u"Exporting {0} with uid {1} named {2}" if "name" in objects[i] else u"Exporting {0} with uid {1}"
         message = string.format(api_type, objects[i]["uid"], objects[i]["name"] if 'name' in objects[i] else "").encode("utf-8")
         debug_log(message)
