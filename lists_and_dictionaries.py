@@ -291,14 +291,15 @@ no_export_fields_by_api_type = {
     "simple-gateway": ["forward-logs-to-log-server-schedule-name", "hardware", "dynamic-ip", "sic-name", "sic-state", "send-alerts-to-server",
                        "send-logs-to-backup-server", "send-logs-to-server", "interfaces"],
     "application-site": ["application-id", "risk", "user-defined"],
-    "application-site-category": ["user-defined"]
+    "application-site-category": ["user-defined"],
+    "data-center-object": ["name-in-data-center", "data-center", "data-center-object-meta-info", "deleted", "type-in-data-center", "additional-properties"]
 }
 
 fields_to_change = {
     "alert-when-free-disk-space-below-metrics": "free-disk-space-metrics",
     "delete-index-files-when-index-size-above-metrics": "free-disk-space-metrics",
     "delete-when-free-disk-space-below-metrics": "free-disk-space-metrics",
-    "stop-logging-when-free-disk-space-below-metrics": "free-disk-space-metrics",
+    "stop-logging-when-free-disk-space-below-metrics": "free-disk-space-metrics"
 }
 
 fields_to_exclude_in_the_presence_of_other_fields = {
