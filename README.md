@@ -17,9 +17,12 @@ This tool enables you to export a policy package (Access Policy, Threat Policy o
 ## Instructions
 Clone the repository with this command:
 ```git
-git clone --recursive https://github.com/CheckPoint-APIs-Team/ExportImportPolicyPackage
+git clone https://github.com/CheckPoint-APIs-Team/ExportImportPolicyPackage
 ```
-or by clicking the Download ZIP button. In this case, the "cp_mgmt_api_python_sdk" folder will be created empty and you will need to manually download and copy the [Check Point API Python SDK](https://github.com/CheckPoint-APIs-Team/cpapi-python-sdk) content into this folder.
+or by clicking the Download ZIP button. 
+
+Download and install the [Check Point API Python SDK](https://github.com/CheckPointSW/cp_mgmt_api_python_sdk) 
+repository, follow the instructions in the SDK repository.
 
 To export a package, run the import_export_package.py script. An interactive menu will guide you the rest of the way. Command line flags may also be set in order to skip some or all of the menu.
 

@@ -2,7 +2,7 @@ from __future__ import print_function
 
 import argparse
 
-from cp_mgmt_api_python_sdk.lib import APIClientArgs
+from cpapi import APIClient, APIClientArgs
 from exporting.export_package import export_package
 from importing.import_package import import_package
 from utils import process_arguments, extract_sid_from_session_file, handle_login_fail
@@ -12,7 +12,6 @@ log_file = None
 output_file = None
 client = None
 
-from cp_mgmt_api_python_sdk.lib import APIClient
 
 if __name__ == "__main__":
 

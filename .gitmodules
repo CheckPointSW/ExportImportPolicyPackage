@@ -1,3 +1,0 @@
-[submodule "cp_mgmt_api_python_sdk"]
-	path = cp_mgmt_api_python_sdk
-	url = https://github.com/CheckPoint-APIs-Team/cp_mgmt_api_python_sdk
