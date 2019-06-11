@@ -23,13 +23,18 @@ if __name__ == "__main__":
                                     unsafe_auto_accept=args.unsafe_auto_accept)
 
     with APIClient(args_for_client) as client:
-
+        payload = {}
         if args.login == '1':
+            payload["read-only"] = "true" if args.operation == "export" else "false"
+            if args.session_timeout:
+                payload["session-timeout"] = args.session_timeout
             login_reply = client.login(username=args.username, password=args.password, domain=args.domain,
-                                       payload={"read-only": "true" if args.operation == "export" else "false"})
+                                       payload=payload)
             handle_login_fail(not login_reply.success, "Login to management server failed. " + str(login_reply))
         elif args.login == '2':
-            client.login_as_root(domain=args.domain)
+            if args.session_timeout:
+                payload["session-timeout"] = args.session_timeout
+            client.login_as_root(domain=args.domain, payload=payload)
         elif args.login == '3':
             client.sid = extract_sid_from_session_file(args.session_file)
             handle_login_fail(not client.sid, "Could not extract SID form Session-File!")
