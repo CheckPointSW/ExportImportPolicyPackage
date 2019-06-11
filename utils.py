@@ -62,6 +62,8 @@ def populate_parser(parser):
                         help="UNSAFE! Ignore certificate verification.")
     parser.add_argument("--unsafe-auto-accept", required=False, action="store_true",
                         help="UNSAFE! Auto accept fingerprint during certificate verification.")
+    parser.add_argument("-t", "--session-timeout", required=False,
+                        help="The login session-timeout.")
     return parser.parse_args()
 
 
