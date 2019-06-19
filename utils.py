@@ -150,8 +150,7 @@ def extract_sid_from_session_file(session_file):
         content = f.readlines()
     for line in content:
         if "sid" in line:
-            sid = line.split(" ")[1]
-            return sid[1:len(sid) - 2]
+            return line.split(" ")[1].split("\"")[1]
     return None
 
 

@@ -155,7 +155,7 @@ class Menu:
         elif self.level == 2:
             try:
                 choice = int(raw_input())
-                if choice not in range(1, len(self.options)) and not choice == 99:
+                if choice not in range(1, len(self.options) + 1) and not choice == 99:
                     self.display_wrong_choice()
                 elif choice == 99:
                     if self.level == self.lowest_level:
