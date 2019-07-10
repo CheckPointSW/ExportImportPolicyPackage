@@ -1,6 +1,7 @@
 import csv
 import os
 import tarfile
+import sys
 
 from lists_and_dictionaries import singular_to_plural_dictionary, generic_objects_for_rule_fields, import_priority
 from utils import debug_log, create_payload, compare_versions, generate_new_dummy_ip_address
@@ -33,6 +34,20 @@ def import_objects(file_name, client, changed_layer_names, layer=None):
 
     if not general_object_files:
         debug_log("Nothing to import...", True)
+        
+    version_file_name = [f for f in tar_files if f.name == "version.txt"][0]
+    with open(version_file_name.name, 'rb') as version_file:
+        version = version_file.readline()
+        api_versions = client.api_call("show-api-versions")
+        if not api_versions.success:
+            debug_log("Error getting versions! Aborting import. " + str(api_versions), True, True)
+            sys.exit(1)
+        if version in api_versions.data["supported-versions"]:
+            client.api_version = version
+        else:
+            debug_log(
+                "The version of the imported package doesn't exist in this machine! import with this machines latest version. ",
+                True, True)
 
     for general_object_file in general_object_files:
         _, file_extension = os.path.splitext(general_object_file.name)
