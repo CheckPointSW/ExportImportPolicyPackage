@@ -233,6 +233,11 @@ def export_to_tar(data_dict, timestamp, tar, lst, api_version, ignore_list=None)
 
         counter += 1
 
+    file_name_version = "version.txt"
+    with open(file_name_version, "wb") as tar_file_version:
+        tar_file_version.write(api_version)
+    tar.add(file_name_version)
+
 
 def write_data(json_data, out_file, file_format, close_file=True):
     for obj in json_data:
