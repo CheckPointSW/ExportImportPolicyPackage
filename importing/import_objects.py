@@ -12,6 +12,7 @@ missing_parameter_set = set()
 should_create_imported_nat_top_section = True
 should_create_imported_nat_bottom_section = True
 imported_nat_top_section_uid = None
+name_collision_map = {}
 
 
 def import_objects(file_name, client, changed_layer_names, layer=None):
@@ -119,6 +120,14 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
         position_decrements_for_sections.append(position_decrement_due_to_rule)
 
     payload, _ = create_payload(fields, line, 0, api_type, client.api_version)
+
+    # for objects that had collisions, use new name in the imported package
+    for field in ["members", "source", "destination"]:
+        if field in payload:
+            for i, member in enumerate(payload[field]):
+                if member in name_collision_map:
+                    payload[field][i] = name_collision_map[member]
+
     payload["ignore-warnings"] = True  # Useful for example when creating two hosts with the same IP
 
     if "nat-rule" in api_type:
@@ -224,6 +233,7 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
         if api_reply.success:
             debug_log("Object \"%s\" was renamed to \"%s\" to resolve the name collision"
                       % (original_name, payload["name"]), True, True)
+            name_collision_map[original_name] = payload["name"]
 
     if not api_reply.success:
         if api_reply.data and "errors" in api_reply.data:
