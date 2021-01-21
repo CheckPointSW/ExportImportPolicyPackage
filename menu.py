@@ -78,24 +78,36 @@ class Menu:
                 self.lowest_level = 3
                 display = False
         elif self.level == 3 and self.export:
-            self.title = "The script will run with the following parameters:\n" + \
-                         "Export Access-Control layers = " + str(self.self_args.access or self.self_args.all) + "\n" + \
-                         "Export Threat-Prevention layers = " + str(
-                self.self_args.threat or self.self_args.all) + "\n" + \
-                         "Output-file name = " + str(self.self_args.output_file) + "\n" + \
-                         "Management Server IP = " + str(self.self_args.management) + "\n" + \
-                         "Management Server Port = " + str(self.self_args.port) + "\n" + \
-                         "Management Server Domain = " + str(self.self_args.domain)
-            self.options = ["Change Settings", "Run"]
-            self.last_option = "Exit" if self.level == self.lowest_level else "Back"
+            if not self.args.force:
+                self.title = "The script will run with the following parameters:\n" + \
+                             "Export Access-Control layers = " + str(self.self_args.access or self.self_args.all) + "\n" + \
+                             "Export Threat-Prevention layers = " + str(
+                    self.self_args.threat or self.self_args.all) + "\n" + \
+                             "Output-file name = " + str(self.self_args.output_file) + "\n" + \
+                             "Management Server IP = " + str(self.self_args.management) + "\n" + \
+                             "Management Server Port = " + str(self.self_args.port) + "\n" + \
+                             "Management Server Domain = " + str(self.self_args.domain)
+                self.options = ["Change Settings", "Run"]
+                self.last_option = "Exit" if self.level == self.lowest_level else "Back"
+            else:
+                if not self.self_args.login == '1':
+                    return
+                else:
+                    self.level = 5
         elif self.level == 3 and not self.export:
-            self.title = "The script will run with the following parameters:\n" + \
-                         "Custom name for imported package (optional) = " + str(self.self_args.name) + "\n" + \
-                         "Management Server IP = " + str(self.self_args.management) + "\n" + \
-                         "Management Server Port = " + str(self.self_args.port) + "\n" + \
-                         "Management Server Domain = " + str(self.self_args.domain)
-            self.options = ["Change Settings", "Run"]
-            self.last_option = "Exit" if self.level == self.lowest_level else "Back"
+            if not self.args.force:
+                self.title = "The script will run with the following parameters:\n" + \
+                             "Custom name for imported package (optional) = " + str(self.self_args.name) + "\n" + \
+                             "Management Server IP = " + str(self.self_args.management) + "\n" + \
+                             "Management Server Port = " + str(self.self_args.port) + "\n" + \
+                             "Management Server Domain = " + str(self.self_args.domain)
+                self.options = ["Change Settings", "Run"]
+                self.last_option = "Exit" if self.level == self.lowest_level else "Back"
+            else:
+                if not self.self_args.login == '1':
+                    return
+                else:
+                    self.level = 5
         elif self.level == 4 and self.export:
             access_string = "Enable" if not self.self_args.access else "Disable"
             threat_string = "Enable" if not self.self_args.threat else "Disable"
