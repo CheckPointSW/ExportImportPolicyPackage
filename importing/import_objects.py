@@ -320,7 +320,7 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
         position_decrement_due_to_rule += 1
 
         debug_log(log_err_msg, True, True)
-        if args.strict:
+        if args is not None and args.strict:
             discard_reply = client.api_call("discard")
             if not discard_reply.success:
                 debug_log("Failed to discard changes! Terminating. Error: " +
