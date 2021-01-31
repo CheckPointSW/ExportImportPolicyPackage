@@ -50,7 +50,7 @@ def import_package(client, args):
                 exit(0)
 
     debug_log("Importing general objects", True)
-    layers_to_attach = import_objects(args.file, client, {}, None, args)
+    layers_to_attach = import_objects(args.file, client, {}, None, args, package=package)
 
     num_global_access, num_global_threat = count_global_layers(client, package)
 
