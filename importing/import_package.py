@@ -34,22 +34,23 @@ def import_package(client, args):
         client.api_call("add-package", {"name": package, "access": True, "threat-prevention": True})
         client.api_call("publish", wait_for_task=True)
     else:
-        print("A package named " + package + " already exists. Are you sure you want to import?")
-        print("1.Yes")
-        print("2.No")
-        choice = ""
-        chosen = False
-        while not chosen:
-            choice = raw_input()
-            if choice not in ["1", "2"]:
-                print("Please enter either '1' or '2'")
-            else:
-                chosen = True
-        if choice == '2':
-            exit(0)
+        if not args.force:
+            print("A package named " + package + " already exists. Are you sure you want to import?")
+            print("1.Yes")
+            print("2.No")
+            choice = ""
+            chosen = False
+            while not chosen:
+                choice = raw_input()
+                if choice not in ["1", "2"]:
+                    print("Please enter either '1' or '2'")
+                else:
+                    chosen = True
+            if choice == '2':
+                exit(0)
 
     debug_log("Importing general objects", True)
-    layers_to_attach = import_objects(args.file, client, {})
+    layers_to_attach = import_objects(args.file, client, {}, None, args)
 
     num_global_access, num_global_threat = count_global_layers(client, package)
 
