@@ -3,7 +3,6 @@ import time
 
 import sys
 
-
 from importing.import_objects import import_objects
 from utils import debug_log, generate_import_error_report, count_global_layers
 
