@@ -15,7 +15,7 @@ imported_nat_top_section_uid = None
 name_collision_map = {}
 
 
-def import_objects(file_name, client, changed_layer_names, layer=None, args=None, package=None):
+def import_objects(file_name, client, changed_layer_names, package, layer=None, args=None):
     global position_decrements_for_sections
 
     export_tar = tarfile.open(file_name, "r:gz")
@@ -100,7 +100,7 @@ def import_objects(file_name, client, changed_layer_names, layer=None, args=None
             layer_name = changed_layer_names[layer_name]
         debug_log("Importing " + layer_type.split('_')[0].capitalize() + "_" + layer_type.split('_')[1].capitalize() +
                   " [" + layer_name + "]", True)
-        import_objects(rulebase_object_file.name, client, changed_layer_names, layer_name, args, package)
+        import_objects(rulebase_object_file.name, client, changed_layer_names, package, layer_name, args)
         os.remove(rulebase_object_file.name)
 
     return layers_to_attach
@@ -132,6 +132,8 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
 
     if "nat-rule" in api_type:
         # For NAT rules, the 'package' parameter is the name of the policy package!!!
+        if package is None:
+            debug_log("Internal error: package name is unknown", True, True)
         payload["package"] = package
         # --- NAT rules specific logic ---
         # Importing only rules, without sections.
@@ -217,41 +219,37 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
                     applied_rule["layer"] = changed_layer_names[applied_rule["layer"]]
 
     if "tags" in payload:
-        tags = payload["tags"]
-        tags_payload = []
+        exported_tags = payload["tags"]
+        exported_tags_new = []
         unresolved_tags = []
-        for tag in tags:
+        for tag in exported_tags:
             tag_name = None
             if isinstance(tag, dict):
                 if "name" in tag:
                     tag_name = str(tag["name"])
-            elif isinstance(tag, str):
-                tag_name = tag
 
-            if tag_name is not None:
+            if tag_name is None or tag_name == "":
+                debug_log("Unknown tag name for object [{0}]".format(payload["name"]), True, True)
+            else:
                 add_tag_to_payload = False
                 reply = client.api_call("show-tag", {"name": tag_name})
                 if reply.success:
                     add_tag_to_payload = True
                 elif "generic_err_object_not_found" in reply.data["code"]:
-                    if isinstance(tag, str):
-                        tag = {"name": tag}
                     reply = client.api_call("add-tag", tag)
                     if reply.success:
                         add_tag_to_payload = True
 
                 if add_tag_to_payload:
-                    tags_payload.append(tag_name)
+                    exported_tags_new.append(tag_name)
                 else:
                     unresolved_tags.append(tag_name)
 
         if len(unresolved_tags) > 0:
             debug_log("Failed to add tags {0} for object [{1}]".format(unresolved_tags, payload["name"]), True, True)
 
-        if len(tags_payload) > 0:
-            payload["tags"] = tags_payload
-        else:
-            del payload["tags"]
+        if len(exported_tags_new) > 0:
+            payload["tags"] = exported_tags_new
 
     api_reply = client.api_call(api_call, payload)
 
