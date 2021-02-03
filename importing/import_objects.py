@@ -15,7 +15,7 @@ imported_nat_top_section_uid = None
 name_collision_map = {}
 
 
-def import_objects(file_name, client, changed_layer_names, layer=None, args=None):
+def import_objects(file_name, client, changed_layer_names, package, layer=None, args=None):
     global position_decrements_for_sections
 
     export_tar = tarfile.open(file_name, "r:gz")
@@ -91,7 +91,7 @@ def import_objects(file_name, client, changed_layer_names, layer=None, args=None
             counter, position_decrement_due_to_rules = add_object(line, counter, position_decrement_due_to_rules,
                                                                   position_decrement_due_to_sections, fields, api_type,
                                                                   generic_type, layer, layers_to_attach,
-                                                                  changed_layer_names, api_call, num_objects, client, args)
+                                                                  changed_layer_names, api_call, num_objects, client, args, package)
 
     for rulebase_object_file in rulebase_object_files:
         layer_type = rulebase_object_file.name.split("__")[1]
@@ -100,7 +100,7 @@ def import_objects(file_name, client, changed_layer_names, layer=None, args=None
             layer_name = changed_layer_names[layer_name]
         debug_log("Importing " + layer_type.split('_')[0].capitalize() + "_" + layer_type.split('_')[1].capitalize() +
                   " [" + layer_name + "]", True)
-        import_objects(rulebase_object_file.name, client, changed_layer_names, layer_name, args)
+        import_objects(rulebase_object_file.name, client, changed_layer_names, package, layer_name, args)
         os.remove(rulebase_object_file.name)
 
     return layers_to_attach
@@ -108,7 +108,7 @@ def import_objects(file_name, client, changed_layer_names, layer=None, args=None
 
 def add_object(line, counter, position_decrement_due_to_rule, position_decrement_due_to_section, fields, api_type,
                generic_type, layer, layers_to_attach,
-               changed_layer_names, api_call, num_objects, client, args):
+               changed_layer_names, api_call, num_objects, client, args, package):
     global duplicates_dict
     global position_decrements_for_sections
     global missing_parameter_set
@@ -131,8 +131,10 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
     payload["ignore-warnings"] = True  # Useful for example when creating two hosts with the same IP
 
     if "nat-rule" in api_type:
-        # For NAT rules, the 'layer' parameter is the name of the policy package!!!
-        payload["package"] = layer
+        # For NAT rules, the 'package' parameter is the name of the policy package!!!
+        if package is None:
+            debug_log("Internal error: package name is unknown", True, True)
+        payload["package"] = package
         # --- NAT rules specific logic ---
         # Importing only rules, without sections.
         # Rules marked as "__before_auto_rules = TRUE" will be imported at the TOP of the rulebase, inside a new section "IMPORTED UPPER RULES".
@@ -145,7 +147,7 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
             if should_create_imported_nat_top_section:
                 should_create_imported_nat_top_section = False
                 nat_section_payload = {}
-                nat_section_payload["package"] = layer
+                nat_section_payload["package"] = package
                 nat_section_payload["position"] = "top"
                 # --> we add the footer section first!!!
                 nat_section_payload["name"] = "Original Upper Rules"
@@ -165,7 +167,7 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
             if should_create_imported_nat_bottom_section:
                 should_create_imported_nat_bottom_section = False
                 nat_section_payload = {}
-                nat_section_payload["package"] = layer
+                nat_section_payload["package"] = package
                 nat_section_payload["position"] = "bottom"
                 nat_section_payload["name"] = "IMPORTED LOWER RULES"
                 client.api_call("add-nat-section", nat_section_payload)
@@ -215,6 +217,39 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
             for applied_rule in payload["applied-threat-rules"]:
                 if applied_rule["layer"] in changed_layer_names.keys():
                     applied_rule["layer"] = changed_layer_names[applied_rule["layer"]]
+
+    if "tags" in payload:
+        exported_tags = payload["tags"]
+        tags_to_import = []
+        unresolved_tags = []
+        for tag in exported_tags:
+            tag_name = None
+            if isinstance(tag, dict):
+                if "name" in tag:
+                    tag_name = str(tag["name"])
+
+            if tag_name is None or tag_name == "":
+                debug_log("Unknown tag name for object [{0}]".format(payload["name"]), True, True)
+            else:
+                add_tag_to_payload = False
+                reply = client.api_call("show-tag", {"name": tag_name})
+                if reply.success:
+                    add_tag_to_payload = True
+                elif "generic_err_object_not_found" in reply.data["code"]:
+                    reply = client.api_call("add-tag", tag)
+                    if reply.success:
+                        add_tag_to_payload = True
+
+                if add_tag_to_payload:
+                    tags_to_import.append(tag_name)
+                else:
+                    unresolved_tags.append(tag_name)
+
+        if len(unresolved_tags) > 0:
+            debug_log("Failed to add tags {0} for object [{1}]".format(unresolved_tags, payload["name"]), True, True)
+
+        if len(tags_to_import) > 0:
+            payload["tags"] = tags_to_import
 
     api_reply = client.api_call(api_call, payload)
 
@@ -278,7 +313,7 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
                         return add_object(line, counter, position_decrement_due_to_rule,
                                           position_decrement_due_to_section, fields, api_type, generic_type, layer,
                                           layers_to_attach,
-                                          changed_layer_names, api_call, num_objects, client, args)
+                                          changed_layer_names, api_call, num_objects, client, args, package)
         if "Invalid parameter for [position]" in api_reply.error_message:
             if "access-rule" in api_type:
                 position_decrement_due_to_rule += adjust_position_decrement(int(payload["position"]),
@@ -289,7 +324,7 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
             return add_object(line, counter, position_decrement_due_to_rule, position_decrement_due_to_section, fields,
                               api_type, generic_type, layer,
                               layers_to_attach,
-                              changed_layer_names, api_call, num_objects, client, args)
+                              changed_layer_names, api_call, num_objects, client, args, package)
         elif "is not unique" in api_reply.error_message and "name" in api_reply.error_message:
             field_value = api_reply.error_message.partition("name")[2].split("[")[1].split("]")[0]
             debug_log("Not unique name problem \"%s\" - changing payload to use UID instead." % field_value, True, True)
@@ -309,13 +344,13 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
                     line[fields.index(field_key)] = duplicates_dict[field_value]
                 return add_object(line, counter, position_decrement_due_to_rule, position_decrement_due_to_section, fields,
                                   api_type, generic_type, layer, layers_to_attach,
-                                  changed_layer_names, api_call, num_objects, client, args)
+                                  changed_layer_names, api_call, num_objects, client, args, package)
             else:
                 debug_log("Not unique name problem \"%s\" - cannot change payload to use UID instead of name." % field_value, True, True)
         elif "will place the exception in an Exception-Group" in api_reply.error_message:
             return add_object(line, counter, position_decrement_due_to_rule - 1, position_decrement_due_to_section,
                               fields, api_type, generic_type, layer, layers_to_attach,
-                              changed_layer_names, api_call, num_objects, client, args)
+                              changed_layer_names, api_call, num_objects, client, args, package)
 
         position_decrement_due_to_rule += 1
 
