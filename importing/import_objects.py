@@ -220,7 +220,7 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
 
     if "tags" in payload:
         exported_tags = payload["tags"]
-        exported_tags_new = []
+        tags_to_import = []
         unresolved_tags = []
         for tag in exported_tags:
             tag_name = None
@@ -241,15 +241,15 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
                         add_tag_to_payload = True
 
                 if add_tag_to_payload:
-                    exported_tags_new.append(tag_name)
+                    tags_to_import.append(tag_name)
                 else:
                     unresolved_tags.append(tag_name)
 
         if len(unresolved_tags) > 0:
             debug_log("Failed to add tags {0} for object [{1}]".format(unresolved_tags, payload["name"]), True, True)
 
-        if len(exported_tags_new) > 0:
-            payload["tags"] = exported_tags_new
+        if len(tags_to_import) > 0:
+            payload["tags"] = tags_to_import
 
     api_reply = client.api_call(api_call, payload)
 
