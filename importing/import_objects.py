@@ -270,6 +270,33 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
                       % (original_name, payload["name"]), True, True)
             name_collision_map[original_name] = payload["name"]
 
+    while not api_reply.success and "Requested object" in api_reply.error_message and "not found" in api_reply.error_message:
+        field_value = api_reply.error_message.split("[")[1].split("]")[0]
+        show_updatable_objects_payload = {}
+        show_updatable_objects_payload["filter"] = {}
+        show_updatable_objects_payload["filter"]["text"] = field_value
+        show_updatable_reply = client.api_call(
+            "show-updatable-objects-repository-content", show_updatable_objects_payload)
+        updatable_object = next(
+            x for x in show_updatable_reply.data["objects"] if
+            x["name-in-updatable-objects-repository"] and x["name-in-updatable-objects-repository"] == field_value)
+
+        if not updatable_object:
+            break
+
+        add_updatable_reply = client.api_call(
+            "add-updatable-object",
+            {"uid-in-updatable-objects-repository": updatable_object["uid-in-updatable-objects-repository"]})
+
+        if not add_updatable_reply.success:
+            debug_log(
+                "Failed to add updatable object {0}".format(field_value))
+            break
+
+        debug_log(
+            "Added updatable object {0}".format(field_value))
+        api_reply = client.api_call(api_call, payload)
+
     if not api_reply.success:
         if api_reply.data and "errors" in api_reply.data:
             error_msg = api_reply.data["errors"][0]["message"]
