@@ -54,7 +54,7 @@ def export_package(client, args):
                 os.remove(layer_tar_name)
 
         # NAT policy should be exported as a part of Access policy
-        if show_package.data["nat-policy"]:
+        if not args.nat_not_included and show_package.data["nat-policy"]:
             debug_log("Exporting NAT policy", True)
             nat_data_dict, nat_unexportable_objects = export_nat_rulebase(show_package.data["name"], client)
             if nat_data_dict:

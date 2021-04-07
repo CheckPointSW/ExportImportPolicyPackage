@@ -66,6 +66,8 @@ def populate_parser(parser):
                         help="Session expiration timeout in seconds.")
     parser.add_argument("--force", required=False, default=False, action="store_true",
                         help="Force run the command with no confirmation. WARNING! - this will set unsafe-auto-accept to be true as well.")
+    parser.add_argument("--nat_not_included", required=False, default=False, action="store_true",
+                        help="Will exclude NAT rules from the export")
     parser.add_argument("--strict", required=False, default=False, action="store_true",
                         help="Stop import on first API error.")
     return parser.parse_args()
