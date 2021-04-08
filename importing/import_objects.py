@@ -270,7 +270,8 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
                       % (original_name, payload["name"]), True, True)
             name_collision_map[original_name] = payload["name"]
 
-    while not api_reply.success and "Requested object" in api_reply.error_message and "not found" in api_reply.error_message:
+    while not api_reply.success and "rule" in api_type and (
+            "Requested object" in api_reply.error_message and "not found" in api_reply.error_message):
         field_value = api_reply.error_message.split("[")[1].split("]")[0]
         show_updatable_objects_payload = {}
         show_updatable_objects_payload["filter"] = {}
