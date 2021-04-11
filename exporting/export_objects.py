@@ -281,11 +281,7 @@ def should_export(obj):
     if "name" in obj and obj["name"] == "ThreatStandardSubRulebase":
         return False
     # TODO AdamG consider using domain-type
-    if "domain" in obj and obj["domain"]["domain-type"] not in ["domain", "global domain"]:
-        return False
-    if "type" in obj and obj["type"] in ["updatable-object"]:
-        return False
-    return True
+    return "domain" in obj and obj["domain"]["domain-type"] in ["domain", "global domain"]
 
 
 def get_objects(raw_data, version):

@@ -218,6 +218,12 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
                 if applied_rule["layer"] in changed_layer_names.keys():
                     applied_rule["layer"] = changed_layer_names[applied_rule["layer"]]
 
+    if "updatable-object" in api_type:
+        del payload["name"]
+        del payload["name-in-updatable-objects-repository"]
+        del payload["additional-properties"]
+        del payload["updatable-object-meta-info"]
+
     if "tags" in payload:
         exported_tags = payload["tags"]
         tags_to_import = []
@@ -270,34 +276,6 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
                       % (original_name, payload["name"]), True, True)
             name_collision_map[original_name] = payload["name"]
 
-    while not api_reply.success and "rule" in api_type and (
-            "Requested object" in api_reply.error_message and "not found" in api_reply.error_message):
-        field_value = api_reply.error_message.split("[")[1].split("]")[0]
-        show_updatable_objects_payload = {}
-        show_updatable_objects_payload["filter"] = {}
-        show_updatable_objects_payload["filter"]["text"] = field_value
-        show_updatable_reply = client.api_call(
-            "show-updatable-objects-repository-content", show_updatable_objects_payload)
-        updatable_object = next(
-            x for x in show_updatable_reply.data["objects"] if
-            x["name-in-updatable-objects-repository"] and x["name-in-updatable-objects-repository"] == field_value)
-
-        if not updatable_object:
-            break
-
-        add_updatable_reply = client.api_call(
-            "add-updatable-object",
-            {"uid-in-updatable-objects-repository": updatable_object["uid-in-updatable-objects-repository"]})
-
-        if not add_updatable_reply.success:
-            debug_log(
-                "Failed to add updatable object {0}".format(field_value))
-            break
-
-        debug_log(
-            "Added updatable object {0}".format(field_value))
-        api_reply = client.api_call(api_call, payload)
-
     if not api_reply.success:
         if api_reply.data and "errors" in api_reply.data:
             error_msg = api_reply.data["errors"][0]["message"]
@@ -310,6 +288,9 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
 
         if "More than one object" in api_reply.error_message:
             log_err_msg = api_reply.error_message + ". Cannot import this object"
+
+        if "Object is already imported. please use the existing object" in api_reply.error_message:
+            return counter, position_decrement_due_to_rule
 
         if "rule" in api_type and (
                         "Requested object" in api_reply.error_message and "not found" in api_reply.error_message):
