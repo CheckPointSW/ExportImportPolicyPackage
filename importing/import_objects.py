@@ -220,11 +220,17 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
 
     if "updatable-object" in api_type:
         updatable_object_payload = {}
-        updatable_object_payload["tags"] = getattr(payload, "tags", [])
-        updatable_object_payload["comments"] = getattr(payload, "comments", "")
-        updatable_object_payload["color"] = payload["color"]
-        updatable_object_payload["uid-in-updatable-objects-repository"] = getattr(
-            payload, "uid-in-data-center", payload["uid-in-updatable-objects-repository"])
+        if "uid-in-updatable-objects-repository" in payload:
+            updatable_object_payload["uid-in-updatable-objects-repository"] = payload[
+                "uid-in-updatable-objects-repository"]
+        elif "uid-in-data-center" in payload:
+            updatable_object_payload["uid-in-updatable-objects-repository"] = payload["uid-in-data-center"]
+        if "tags" in payload:
+            updatable_object_payload["tags"] = payload["tags"]
+        if "comments" in payload:
+            updatable_object_payload["comments"] = payload["comments"]
+        if "color" in payload:
+            updatable_object_payload["color"] = payload["color"]
         payload = updatable_object_payload
 
     if "tags" in payload:
