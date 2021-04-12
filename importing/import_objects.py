@@ -219,10 +219,13 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
                     applied_rule["layer"] = changed_layer_names[applied_rule["layer"]]
 
     if "updatable-object" in api_type:
-        del payload["name"]
-        del payload["name-in-updatable-objects-repository"]
-        del payload["additional-properties"]
-        del payload["updatable-object-meta-info"]
+        updatable_object_payload = {}
+        updatable_object_payload["tags"] = getattr(payload, "tags", [])
+        updatable_object_payload["comments"] = getattr(payload, "comments", "")
+        updatable_object_payload["color"] = payload["color"]
+        updatable_object_payload["uid-in-updatable-objects-repository"] = getattr(
+            payload, "uid-in-data-center", payload["uid-in-updatable-objects-repository"])
+        payload = updatable_object_payload
 
     if "tags" in payload:
         exported_tags = payload["tags"]
