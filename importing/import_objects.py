@@ -218,6 +218,21 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
                 if applied_rule["layer"] in changed_layer_names.keys():
                     applied_rule["layer"] = changed_layer_names[applied_rule["layer"]]
 
+    if "updatable-object" in api_type:
+        updatable_object_payload = {}
+        if "uid-in-updatable-objects-repository" in payload:
+            updatable_object_payload["uid-in-updatable-objects-repository"] = payload[
+                "uid-in-updatable-objects-repository"]
+        elif "uid-in-data-center" in payload:
+            updatable_object_payload["uid-in-updatable-objects-repository"] = payload["uid-in-data-center"]
+        if "tags" in payload:
+            updatable_object_payload["tags"] = payload["tags"]
+        if "comments" in payload:
+            updatable_object_payload["comments"] = payload["comments"]
+        if "color" in payload:
+            updatable_object_payload["color"] = payload["color"]
+        payload = updatable_object_payload
+
     if "tags" in payload:
         exported_tags = payload["tags"]
         tags_to_import = []
@@ -282,6 +297,9 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
 
         if "More than one object" in api_reply.error_message:
             log_err_msg = api_reply.error_message + ". Cannot import this object"
+
+        if "Object is already imported. please use the existing object" in api_reply.error_message:
+            return counter, position_decrement_due_to_rule
 
         if "rule" in api_type and (
                         "Requested object" in api_reply.error_message and "not found" in api_reply.error_message):

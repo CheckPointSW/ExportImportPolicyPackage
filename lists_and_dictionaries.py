@@ -195,7 +195,8 @@ singular_to_plural_dictionary = {
         "threat-rule": "threat-rules",
         "threat-exception-section": "threat-exception-sections",
         "threat-exception": "threat-exceptions",
-        "wildcard": "wildcards"
+        "wildcard": "wildcards",
+        "updatable-object": "updatable-objects"
     },
     "1.4": {
         "access-role": "access-roles",
@@ -247,7 +248,8 @@ singular_to_plural_dictionary = {
         "threat-rule": "threat-rules",
         "threat-exception-section": "threat-exception-sections",
         "threat-exception": "threat-exceptions",
-        "wildcard": "wildcards"
+        "wildcard": "wildcards",
+        "updatable-object": "updatable-objects"
     },
     "1.5": {
         "access-role": "access-roles",
@@ -299,7 +301,8 @@ singular_to_plural_dictionary = {
         "threat-rule": "threat-rules",
         "threat-exception-section": "threat-exception-sections",
         "threat-exception": "threat-exceptions",
-        "wildcard": "wildcards"
+        "wildcard": "wildcards",
+        "updatable-object": "updatable-objects"
     },
     "1.6": {
         "access-role": "access-roles",
@@ -351,7 +354,8 @@ singular_to_plural_dictionary = {
         "threat-rule": "threat-rules",
         "threat-exception-section": "threat-exception-sections",
         "threat-exception": "threat-exceptions",
-        "wildcard": "wildcards"
+        "wildcard": "wildcards",
+        "updatable-object": "updatable-objects"
     },
     "1.6.1": {
         "access-role": "access-roles",
@@ -403,7 +407,8 @@ singular_to_plural_dictionary = {
         "threat-rule": "threat-rules",
         "threat-exception-section": "threat-exception-sections",
         "threat-exception": "threat-exceptions",
-        "wildcard": "wildcards"
+        "wildcard": "wildcards",
+        "updatable-object": "updatable-objects"
     },
     "1.7": {
         "access-role": "access-roles",
@@ -455,7 +460,8 @@ singular_to_plural_dictionary = {
         "threat-rule": "threat-rules",
         "threat-exception-section": "threat-exception-sections",
         "threat-exception": "threat-exceptions",
-        "wildcard": "wildcards"
+        "wildcard": "wildcards",
+        "updatable-object": "updatable-objects"
     }
 }
 
