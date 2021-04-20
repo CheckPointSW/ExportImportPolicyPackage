@@ -26,6 +26,8 @@ def populate_parser(parser):
                         help="Indicates whether to export or import the Access-Control layers", action="store_true")
     parser.add_argument("-tp", "--threat", required=False,
                         help="Indicates whether to export or import the Threat-Prevention layers", action="store_true")
+    parser.add_argument("--nat", required=False, default=False, action="store_true",
+                        help="Includes whether to export NAT rules")
     parser.add_argument("-o", "--output-file", required=False, help="The name of output file")
     parser.add_argument("-u", "--username", required=False, default=os.getenv('MGMT_CLI_USER'),
                         help="The management administrator's user name.\nEnvironment variable: MGMT_CLI_USER")
@@ -66,8 +68,6 @@ def populate_parser(parser):
                         help="Session expiration timeout in seconds.")
     parser.add_argument("--force", required=False, default=False, action="store_true",
                         help="Force run the command with no confirmation. WARNING! - this will set unsafe-auto-accept to be true as well.")
-    parser.add_argument("--nat_not_included", required=False, default=False, action="store_true",
-                        help="Will exclude NAT rules from the export")
     parser.add_argument("--strict", required=False, default=False, action="store_true",
                         help="Stop import on first API error.")
     return parser.parse_args()
