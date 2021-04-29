@@ -60,6 +60,8 @@ def populate_parser(parser):
                         default="import_export.log",
                         # os.getenv('MGMT_CLI_LOG_FILE', "get_objects.log"),
                         help="The path to the debugging log file\nDefault: get_objects.log\nEnvironment variable: MGMT_CLI_LOG_FILE")
+    parser.add_argument("--objects-suffix", required=False, default=None,
+                        help="Add suffix to user defined object names.")
     parser.add_argument("--unsafe", required=False, action="store_true",
                         help="UNSAFE! Ignore certificate verification.")
     parser.add_argument("--unsafe-auto-accept", required=False, action="store_true",
