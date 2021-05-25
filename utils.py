@@ -26,6 +26,8 @@ def populate_parser(parser):
                         help="Indicates whether to export or import the Access-Control layers", action="store_true")
     parser.add_argument("-tp", "--threat", required=False,
                         help="Indicates whether to export or import the Threat-Prevention layers", action="store_true")
+    parser.add_argument("--nat", required=False, action="store_true",
+                        help="Indicates whether to export or import the NAT rules")
     parser.add_argument("-o", "--output-file", required=False, help="The name of output file")
     parser.add_argument("-u", "--username", required=False, default=os.getenv('MGMT_CLI_USER'),
                         help="The management administrator's user name.\nEnvironment variable: MGMT_CLI_USER")
