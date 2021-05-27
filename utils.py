@@ -29,7 +29,7 @@ def populate_parser(parser):
     parser.add_argument("--nat", required=False, action="store_true",
                         help="Indicates whether to export or import the NAT rules")
     parser.add_argument("--https", required=False,
-                        help="Indicates whether to export or import the HTTPS layers", action="store_true")
+                        help="Indicates whether to export or import the HTTPS Inspection layers", action="store_true")
     parser.add_argument("-o", "--output-file", required=False, help="The name of output file")
     parser.add_argument("-u", "--username", required=False, default=os.getenv('MGMT_CLI_USER'),
                         help="The management administrator's user name.\nEnvironment variable: MGMT_CLI_USER")
