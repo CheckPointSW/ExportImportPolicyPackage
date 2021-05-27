@@ -3,7 +3,7 @@ import os
 import tarfile
 import sys
 
-from lists_and_dictionaries import singular_to_plural_dictionary, generic_objects_for_rule_fields, import_priority
+from lists_and_dictionaries import singular_to_plural_dictionary, generic_objects_for_rule_fields, import_priority, https_blades_names_map
 from utils import debug_log, create_payload, compare_versions, generate_new_dummy_ip_address
 
 duplicates_dict = {}
@@ -31,7 +31,7 @@ def import_objects(file_name, client, changed_layer_names, package, layer=None, 
 
     general_object_files.sort(compare_general_object_files)
 
-    layers_to_attach = {"access": [], "threat": []}
+    layers_to_attach = {"access": [], "threat": [], "https": []}
 
     if not general_object_files:
         debug_log("Nothing to import...", True)
@@ -65,7 +65,7 @@ def import_objects(file_name, client, changed_layer_names, package, layer=None, 
             generic_type = api_call.split("-")[3]
             api_call = "-".join(api_call.split("-")[0:3])
         api_type = generic_type if generic_type else '-'.join(api_call.split('-')[1:])
-        if api_type == "access-rule":
+        if api_type == "access-rule" or api_type == "https-rule":
             position_decrements_for_sections = []
         debug_log("Adding " + (singular_to_plural_dictionary[client.api_version][api_type].replace('_', ' ')
                                if api_type in singular_to_plural_dictionary[
@@ -116,7 +116,7 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
     global should_create_imported_nat_bottom_section
     global imported_nat_top_section_uid
 
-    if "access-rule" in api_type:
+    if "access-rule" in api_type or "https-rule" in api_type:
         position_decrements_for_sections.append(position_decrement_due_to_rule)
 
     payload, _ = create_payload(fields, line, 0, api_type, client.api_version)
@@ -194,7 +194,7 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
             payload["create"] = generic_type
         if "layer" in api_type:
             check_duplicate_layer(payload, changed_layer_names, api_type, client)
-            if compare_versions(client.api_version, "1.1") != -1:
+            if compare_versions(client.api_version, "1.1") != -1 and "https" not in api_type:
                 payload["add-default-rule"] = "false"
             if layer is None:
                 if "access-layer" in api_type:
@@ -204,8 +204,10 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
                     if "true" in is_ordered_access_control_layer:
                         layers_to_attach["access"].append(payload["name"])   # ordered access layer
                     #<--- end of code segment
-                else:
+                elif "threat-layer" in api_type:
                     layers_to_attach["threat"].append(payload["name"])
+                elif "https-layer" in api_type:
+                    layers_to_attach["https"].append(payload["name"])
         elif "rule" in api_type or "section" in api_type or \
                 (api_type == "threat-exception" and "exception-group-name" not in payload):
             payload["layer"] = layer
@@ -232,6 +234,19 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
         if "color" in payload:
             updatable_object_payload["color"] = payload["color"]
         payload = updatable_object_payload
+    elif "https-rule" in api_type:
+        if "blade" in payload and len(payload["blade"]) > 0:
+            if len(payload["blade"]) == 1 and payload["blade"][0] == "All":
+                del payload["blade"]
+            else:
+                exported_blades = payload["blade"]
+                blades_to_import = []
+                for blade in exported_blades:
+                    if blade in https_blades_names_map:
+                        blades_to_import.append(https_blades_names_map[blade])
+                    else:
+                        blades_to_import.append(blade)
+                payload["blade"] = blades_to_import
 
     if "tags" in payload:
         exported_tags = payload["tags"]
@@ -333,10 +348,10 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
                                           layers_to_attach,
                                           changed_layer_names, api_call, num_objects, client, args, package)
         if "Invalid parameter for [position]" in api_reply.error_message:
-            if "access-rule" in api_type:
+            if "access-rule" in api_type or "https-rule" in api_type:
                 position_decrement_due_to_rule += adjust_position_decrement(int(payload["position"]),
                                                                             api_reply.error_message)
-            elif "access-section" in api_type:
+            elif "access-section" in api_type or "https-section" in api_type:
                 position_decrement_due_to_section += adjust_position_decrement(int(payload["position"]),
                                                                                api_reply.error_message)
             return add_object(line, counter, position_decrement_due_to_rule, position_decrement_due_to_section, fields,

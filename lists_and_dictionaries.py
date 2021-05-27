@@ -355,7 +355,10 @@ singular_to_plural_dictionary = {
         "threat-exception-section": "threat-exception-sections",
         "threat-exception": "threat-exceptions",
         "wildcard": "wildcards",
-        "updatable-object": "updatable-objects"
+        "updatable-object": "updatable-objects",
+        "https-layer": "https-layers",
+        "https-section": "https-sections",
+        "https-rule": "https-rules"
     },
     "1.6.1": {
         "access-role": "access-roles",
@@ -408,7 +411,10 @@ singular_to_plural_dictionary = {
         "threat-exception-section": "threat-exception-sections",
         "threat-exception": "threat-exceptions",
         "wildcard": "wildcards",
-        "updatable-object": "updatable-objects"
+        "updatable-object": "updatable-objects",
+        "https-layer": "https-layers",
+        "https-section": "https-sections",
+        "https-rule": "https-rules"
     },
     "1.7": {
         "access-role": "access-roles",
@@ -461,8 +467,11 @@ singular_to_plural_dictionary = {
         "threat-exception-section": "threat-exception-sections",
         "threat-exception": "threat-exceptions",
         "wildcard": "wildcards",
-        "updatable-object": "updatable-objects"
-    }
+        "updatable-object": "updatable-objects",
+        "https-layer": "https-layers",
+        "https-section": "https-sections",
+        "https-rule": "https-rules"
+    },
 }
 
 unexportable_objects_map = {}
@@ -587,3 +596,10 @@ partially_exportable_types = ["simple-gateway"]
 special_treatment_types = [
     "threat-profile"
 ]
+
+https_blades_names_map = {
+    "Anti-Virus": "Anti Virus",
+    "Anti-Bot": "Anti Bot",
+    "URL Filtering": "Url Filtering",
+    "Data Loss Prevention": "DLP"
+}

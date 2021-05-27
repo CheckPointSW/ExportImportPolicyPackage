@@ -40,6 +40,13 @@ def get_query_rulebase_data(client, api_type, payload):
             layer_settings["content-awareness"] = layer_data["content-awareness"]
         else:
             layer_settings["data-awareness"] = layer_data["data-awareness"]
+    elif layer_data["type"] == "https-layer":
+        layer_settings = {"name": layer_data["name"],
+                          "uid": layer_data["uid"],
+                          "color": layer_data["color"],
+                          "comments": layer_data["comments"],
+                          "shared": layer_data["shared"],
+                          "type": "https-layer"}
     else:
         layer_settings = {"name": layer_data["name"],
                           "uid": layer_data["uid"],
@@ -109,7 +116,7 @@ def get_query_rulebase_data(client, api_type, payload):
 
     debug_log("Analysing rulebase items...")
     for rulebase_item in rulebase_items:
-        if any(x in rulebase_item["type"] for x in ["access-rule", "threat-rule", "threat-exception"]):
+        if any(x in rulebase_item["type"] for x in ["access-rule", "threat-rule", "threat-exception", "https-rule"]):
             string = (u"##Show presented independent rule of type {0} "
                       + (u"with name {1}" if "name" in rulebase_item else u"with no name")).format(
                 rulebase_item["type"],

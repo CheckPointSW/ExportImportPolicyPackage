@@ -81,8 +81,9 @@ class Menu:
             if not self.args.force:
                 self.title = "The script will run with the following parameters:\n" + \
                              "Export Access-Control layers = " + str(self.self_args.access or self.self_args.all) + "\n" + \
-                             "Export Threat-Prevention layers = " + str(
-                    self.self_args.threat or self.self_args.all) + "\n" + \
+                             "Export NAT layers = " + str(self.self_args.nat or self.self_args.all) + "\n" + \
+                             "Export Threat-Prevention layers = " + str(self.self_args.threat or self.self_args.all) + "\n" + \
+                             "Export HTTPS layers = " + str(self.self_args.https or self.self_args.all) + "\n" + \
                              "Output-file name = " + str(self.self_args.output_file) + "\n" + \
                              "Management Server IP = " + str(self.self_args.management) + "\n" + \
                              "Management Server Port = " + str(self.self_args.port) + "\n" + \
@@ -111,9 +112,13 @@ class Menu:
         elif self.level == 4 and self.export:
             access_string = "Enable" if not self.self_args.access else "Disable"
             threat_string = "Enable" if not self.self_args.threat else "Disable"
+            nat_string = "Enable" if not self.self_args.nat else "Disable"
+            https_string = "Enable" if not self.self_args.https else "Disable"
             self.title = "Please select a setting to change:"
             self.options = [access_string + " export of Access-Control Rulebases",
                             threat_string + " export of Threat-Prevention Rulebases",
+                            nat_string + " export of NAT Rulebases",
+                            https_string + " export of HTTPS Rulebases",
                             "Output file name", "Change Management Server IP", "Change Management Server Port",
                             "Change the domain name"]
             self.last_option = "Exit" if self.level == self.lowest_level else "Back"
@@ -207,18 +212,25 @@ class Menu:
                 elif choice == 2:
                     self.self_args.threat = not self.self_args.threat
                     self.menu_print(
-                        "Exporting of Threat-Prevention layers " + "enabled" if self.self_args.threat else "disabled",
-                        2)
+                        "Exporting of Threat-Prevention layers " + "enabled" if self.self_args.threat else "disabled", 2)
                 elif choice == 3:
+                    self.self_args.nat = not self.self_args.nat
+                    self.menu_print(
+                        "Exporting of NAT layers " + "enabled" if self.self_args.nat else "disabled", 2)
+                elif choice == 4:
+                    self.self_args.https = not self.self_args.https
+                    self.menu_print(
+                        "Exporting of HTTPS layers " + "enabled" if self.self_args.https else "disabled", 2)
+                elif choice == 5:
                     self.menu_print("Please enter the output file name:", 0)
                     self.self_args.output_file = raw_input()
-                elif choice == 4:
+                elif choice == 6:
                     self.menu_print("Please enter the IP address of the management server:", 0)
                     self.self_args.management = raw_input()
-                elif choice == 5:
+                elif choice == 7:
                     self.menu_print("Please enter the port on the management server to connect to:", 0)
                     self.self_args.port = raw_input()
-                elif choice == 6:
+                elif choice == 8:
                     self.menu_print("Please enter the IP address or name of the domain you wish to connect to:", 0)
                     self.self_args.domain = raw_input()
                 self.level = 3
