@@ -83,7 +83,7 @@ class Menu:
                              "Export Access-Control layers = " + str(self.self_args.access or self.self_args.all) + "\n" + \
                              "Export NAT layers = " + str(self.self_args.nat or self.self_args.all) + "\n" + \
                              "Export Threat-Prevention layers = " + str(self.self_args.threat or self.self_args.all) + "\n" + \
-                             "Export HTTPS layers = " + str(self.self_args.https or self.self_args.all) + "\n" + \
+                             "Export HTTPS Inspection layers = " + str(self.self_args.https or self.self_args.all) + "\n" + \
                              "Output-file name = " + str(self.self_args.output_file) + "\n" + \
                              "Management Server IP = " + str(self.self_args.management) + "\n" + \
                              "Management Server Port = " + str(self.self_args.port) + "\n" + \
@@ -118,7 +118,7 @@ class Menu:
             self.options = [access_string + " export of Access-Control Rulebases",
                             threat_string + " export of Threat-Prevention Rulebases",
                             nat_string + " export of NAT Rulebases",
-                            https_string + " export of HTTPS Rulebases",
+                            https_string + " export of HTTPS Inspection Rulebases",
                             "Output file name", "Change Management Server IP", "Change Management Server Port",
                             "Change the domain name"]
             self.last_option = "Exit" if self.level == self.lowest_level else "Back"
@@ -220,7 +220,7 @@ class Menu:
                 elif choice == 4:
                     self.self_args.https = not self.self_args.https
                     self.menu_print(
-                        "Exporting of HTTPS layers " + "enabled" if self.self_args.https else "disabled", 2)
+                        "Exporting of HTTPS Inspection layers " + "enabled" if self.self_args.https else "disabled", 2)
                 elif choice == 5:
                     self.menu_print("Please enter the output file name:", 0)
                     self.self_args.output_file = raw_input()
