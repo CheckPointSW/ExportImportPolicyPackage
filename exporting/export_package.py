@@ -7,6 +7,7 @@ from export_access_rulebase import export_access_rulebase
 from export_nat_rulebase import export_nat_rulebase
 from export_objects import merge_data
 from exporting.export_threat_rulebase import export_threat_rulebase
+from exporting.export_https_rulebase import export_https_rulebase
 from lists_and_dictionaries import singular_to_plural_dictionary
 from utils import debug_log, export_to_tar, create_tar_file, generate_export_error_report
 
@@ -25,10 +26,12 @@ def export_package(client, args):
     access = args.access
     threat = args.threat
     nat = args.nat
+    https = args.https
     if args.all:
         access = True
         threat = True
         nat = True
+        https = True
 
     data_dict = {}
     unexportable_objects = {}
@@ -83,6 +86,23 @@ def export_package(client, args):
                                     client.api_version)
                 merge_data(data_dict, threat_data_dict)
                 merge_data(unexportable_objects, threat_unexportable_objects)
+                tar_file.add(layer_tar_name)
+                os.remove(layer_tar_name)
+    if https:
+        if show_package.data["https-inspection-policy"]:
+            debug_log("Exporting HTTPS layers", True)
+            https_layers = [show_package.data["https-inspection-layer"]]
+            for https_layer in https_layers:
+                https_data_dict, https_unexportable_objects \
+                    = export_https_rulebase(show_package.data["name"], https_layer["name"], https_layer["uid"], client)
+                if not https_data_dict:
+                    continue
+                layer_tar_name = \
+                    create_tar_file(https_layer, https_data_dict,
+                                    timestamp, ["https-rule", "https-section"],
+                                    client.api_version)
+                merge_data(data_dict, https_data_dict)
+                merge_data(unexportable_objects, https_unexportable_objects)
                 tar_file.add(layer_tar_name)
                 os.remove(layer_tar_name)
 

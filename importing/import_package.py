@@ -71,6 +71,18 @@ def import_package(client, args):
     set_package_payload = {"name": package, "access-layers": {"add": access_layers},
                            "threat-layers": {"add": threat_layers}}
 
+    if "https" in layers_to_attach and len(layers_to_attach["https"]) > 0:
+        https_layer_name = layers_to_attach["https"][0]
+        set_package_payload["https-layer"] = https_layer_name
+        # Remove default 'Predefined Rule'
+        https_rulebase_reply = client.api_call("show-https-rulebase", {"name": https_layer_name, "details-level": "uid"})
+        if https_rulebase_reply.success and "total" in https_rulebase_reply.data:
+            last_rule_number = int(https_rulebase_reply.data["total"])
+            if last_rule_number > 1:
+                delete_https_rule = client.api_call("delete-https-rule", {"rule-number": last_rule_number, "layer": https_layer_name})
+                if not delete_https_rule.success:
+                    debug_log("Failed to remove default Predefined Rule in https layer ["+https_layer_name+"]", True, True)
+
     debug_log("Attaching layers to package")
     layer_attachment_reply = client.api_call("set-package", set_package_payload)
     if not layer_attachment_reply.success:
