@@ -121,8 +121,8 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
         position_decrements_for_sections.append(position_decrement_due_to_rule)
 
     payload, _ = create_payload(fields, line, 0, api_type, client.api_version)
-    if args is not None and args.objects_suffix:
-        add_suffix_to_objects(payload, args.objects_suffix)
+    if args is not None and args.objects_suffix != "":
+        add_suffix_to_objects(payload, api_type, args.objects_suffix)
 
     # for objects that had collisions, use new name in the imported package
     for field in ["members", "source", "destination"]:
@@ -212,7 +212,7 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
         elif "rule" in api_type or "section" in api_type or \
                 (api_type == "threat-exception" and "exception-group-name" not in payload):
             payload["layer"] = layer
-            if args is not None and args.objects_suffix:
+            if args is not None and args.objects_suffix != "":
                 payload["layer"] += args.objects_suffix
             if client.api_version != "1" and api_type == "access-rule" and "track-alert" in payload:
                 payload["track"] = {}
@@ -462,21 +462,30 @@ def compare_general_object_files(file_a, file_b):
         return 1
     return 0
 
-def add_suffix_to_objects(payload, objects_suffix):
+def add_suffix_to_objects(payload, api_type, objects_suffix):
     global changed_object_names_map
+    ignore_types = ["updatable-object"]
 
-    if "uid-in-updatable-objects-repository" in payload: # We do not change name of updatable object.
+    if api_type in ignore_types:
         return
 
-    for field in payload:
-        if field == "name":
-            oldName = payload[field]
-            newName = oldName + objects_suffix
-            payload[field] = newName
-            changed_object_names_map[oldName] = newName
-        elif field in ['source', 'destination', 'service', 'members']:
-            for i in range(len(payload[field])):
-                if payload[field][i] in changed_object_names_map:
-                    payload[field][i] = changed_object_names_map[payload[field][i]]
-        elif field == "inline-layer":
-            payload[field] = changed_object_names_map[payload[field]]
+    fields_to_change = ["name", "source", "destination", "service", "members", "inline-layer", "networks", "host",
+                        "protected-scope", "protection-or-site", "exception-group-name", "rule-name"]
+    for field in fields_to_change:
+        if field in payload:
+            if field == "name":
+                oldName = payload[field]
+                newName = oldName + objects_suffix
+                payload[field] = newName
+                changed_object_names_map[oldName] = newName
+            if field in ["source", "destination", "service", "members", "protected-scope", "protection-or-site"]:
+                for i in range(len(payload[field])):
+                    if payload[field][i] in changed_object_names_map:
+                        payload[field][i] = changed_object_names_map[payload[field][i]]
+            if field in ["inline-layer", "host", "exception-group-name", "rule-name"]:
+                if payload[field] in changed_object_names_map:
+                    payload[field] = changed_object_names_map[payload[field]]
+            if field == "networks":
+                for i in range(len(payload[field])):
+                    if payload[field][i]["name"] in changed_object_names_map:
+                        payload[field][i]["name"] = changed_object_names_map[payload[field][i]["name"]]
