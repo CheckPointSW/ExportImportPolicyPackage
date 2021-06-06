@@ -478,14 +478,14 @@ def add_suffix_to_objects(payload, api_type, objects_suffix):
                 newName = oldName + objects_suffix
                 payload[field] = newName
                 changed_object_names_map[oldName] = newName
-            if field in ["source", "destination", "service", "members", "protected-scope", "protection-or-site"]:
+            elif field in ["source", "destination", "service", "members", "protected-scope", "protection-or-site"]:
                 for i in range(len(payload[field])):
                     if payload[field][i] in changed_object_names_map:
                         payload[field][i] = changed_object_names_map[payload[field][i]]
-            if field in ["inline-layer", "host", "exception-group-name", "rule-name"]:
+            elif field in ["inline-layer", "host", "exception-group-name", "rule-name"]:
                 if payload[field] in changed_object_names_map:
                     payload[field] = changed_object_names_map[payload[field]]
-            if field == "networks":
+            elif field == "networks":
                 for i in range(len(payload[field])):
                     if payload[field][i]["name"] in changed_object_names_map:
                         payload[field][i]["name"] = changed_object_names_map[payload[field][i]["name"]]
