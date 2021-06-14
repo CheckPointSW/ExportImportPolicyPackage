@@ -366,7 +366,6 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
         elif "is not unique" in api_reply.error_message and "name" in api_reply.error_message:
             field_value = api_reply.error_message.partition("name")[2].split("[")[1].split("]")[0]
             debug_log("Not unique name problem \"%s\" - changing payload to use UID instead." % field_value, True, True)
-            obj_uid_found_and_used = False
             if field_value not in duplicates_dict:
                 show_objects_reply = client.api_query("show-objects",
                                                      payload={"in": ["name", "\"" + field_value + "\""]})
@@ -374,8 +373,7 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
                     for obj in show_objects_reply.data:
                         if obj["name"] == field_value:
                             duplicates_dict[field_value] = obj["uid"]
-                            obj_uid_found_and_used = True
-            if obj_uid_found_and_used:
+            if field_value in duplicates_dict:
                 indices_of_field = [i for i, x in enumerate(line) if x == field_value]
                 field_keys = [x for x in fields if fields.index(x) in indices_of_field]
                 for field_key in field_keys:
