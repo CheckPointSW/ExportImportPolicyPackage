@@ -375,6 +375,8 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
                         if obj["name"] == field_value:
                             duplicates_dict[field_value] = obj["uid"]
                             obj_uid_found_and_used = True
+            else:
+                obj_uid_found_and_used = True
             if obj_uid_found_and_used:
                 indices_of_field = [i for i, x in enumerate(line) if x == field_value]
                 field_keys = [x for x in fields if fields.index(x) in indices_of_field]
