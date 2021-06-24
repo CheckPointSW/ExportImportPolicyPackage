@@ -27,7 +27,7 @@ def export_nat_rulebase(package, client):
 
     debug_log("Exporting NAT rules", True)
 
-    format_and_merge_data(data_dict, rulebase_rules, client)
+    format_and_merge_data(data_dict, rulebase_rules)
 
     debug_log("Exporting placeholders for unexportable objects from NAT rulebase", True)
 
