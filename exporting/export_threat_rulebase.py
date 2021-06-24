@@ -45,7 +45,7 @@ def export_threat_rulebase(package, layer, layer_uid, client):
 
     debug_log("Exporting threat rules from layer [" + layer + "]", True)
 
-    format_and_merge_data(data_dict, rulebase_rules)
+    format_and_merge_data(data_dict, rulebase_rules, client)
 
     debug_log("Exporting Exception-Groups used in layer [" + layer + "]", True)
 
@@ -57,7 +57,7 @@ def export_threat_rulebase(package, layer, layer_uid, client):
 
     debug_log("Exporting layer settings of layer [" + layer + "]", True)
 
-    format_and_merge_data(data_dict, [layer_settings])
+    format_and_merge_data(data_dict, [layer_settings], client)
 
     debug_log("Done exporting layer '" + layer + "'.\n", True)
 

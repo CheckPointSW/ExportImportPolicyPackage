@@ -66,7 +66,8 @@ def get_query_rulebase_data(client, api_type, payload):
     if api_type == "threat-rule-exception-rulebase":
         queryPayload = {"uid": payload["uid"], "package": payload["package"], "rule-uid": payload["rule-uid"]}
 
-    rulebase_replies = client.gen_api_query("show-" + api_type, details_level="full", container_keys=["rulebase"], payload=queryPayload)
+    rulebase_replies = client.gen_api_query("show-" + api_type, details_level="full", container_keys=["rulebase"],
+                                            payload=queryPayload)
 
     for rulebase_reply in rulebase_replies:
         if not rulebase_reply.success:
@@ -92,7 +93,7 @@ def get_query_rulebase_data(client, api_type, payload):
                 skipped_first_empty_section = True
             non_empty_rulebase_items.append(rulebase_item)
             if ("rule-number" in rulebase_item and rulebase_item["rule-number"] == rulebase_data["to"]) or (
-                            "to" in rulebase_item and rulebase_item["to"] == rulebase_data["to"]):
+                    "to" in rulebase_item and rulebase_item["to"] == rulebase_data["to"]):
                 break
 
         if non_empty_rulebase_items and rulebase_items and non_empty_rulebase_items[0]["uid"] == \
@@ -141,7 +142,7 @@ def get_query_rulebase_data(client, api_type, payload):
 
             string = (u"##Show presented section of type {0} " + (
                 u"with name {1}" if "name" in rulebase_item else u"with no name")).format(
-                    rulebase_item["type"], rulebase_item["name"] if "name" in rulebase_item else "")
+                rulebase_item["type"], rulebase_item["name"] if "name" in rulebase_item else "")
             debug_log(string)
             rulebase_sections.append(rulebase_item)
         else:
@@ -160,7 +161,8 @@ def get_query_nat_rulebase_data(client, payload):
 
     debug_log("Getting information from show-nat-rulebase", True)
 
-    rulebase_replies = client.gen_api_query("show-nat-rulebase", details_level="full", container_keys=["rulebase"], payload=payload)
+    rulebase_replies = client.gen_api_query("show-nat-rulebase", details_level="full", container_keys=["rulebase"],
+                                            payload=payload)
 
     for rulebase_reply in rulebase_replies:
         if not rulebase_reply.success:
@@ -227,7 +229,7 @@ def get_query_nat_rulebase_data(client, payload):
 
             string = (u"##Show presented section of type {0} " + (
                 u"with name {1}" if "name" in rulebase_item else u"with no name")).format(
-                    rulebase_item["type"], rulebase_item["name"] if "name" in rulebase_item else "")
+                rulebase_item["type"], rulebase_item["name"] if "name" in rulebase_item else "")
             debug_log(string)
         else:
             debug_log("Unsupported NAT rulebase object type - '" + rulebase_item["type"] + "'. Continue...",
@@ -326,24 +328,40 @@ def export_general_objects(data_dict, api_type, object_dictionary, unexportable_
     if new_object_dictionary:
         object_dictionary = new_object_dictionary
 
-    format_and_merge_data(data_dict, object_dictionary)
+    format_and_merge_data(data_dict, object_dictionary, client)
 
 
-def format_and_merge_data(data_dict, objects):
+def format_and_merge_data(data_dict, objects, client):
     global exported_objects
     unexported_objects = [x for x in objects if x["uid"] not in exported_objects]
     exported_objects.extend([x["uid"] for x in unexported_objects])
-    formatted_data = format_objects(unexported_objects)
+    formatted_data = format_objects(unexported_objects, client)
     merge_data(data_dict, formatted_data)
 
 
-def format_objects(objects):
+def format_objects(objects, client):
     formatted_objects = []
 
     for i in range(len(objects)):
         api_type = objects[i]["type"]
         if api_type in special_treatment_types:
             handle_fields(objects[i])
+        # handle objects with tags field value as list of uids
+        if 'tags' in objects[i] and objects[i]['tags'] != []:
+            for j in range(len(objects[i]['tags'])):
+                if "name" not in objects[i]['tags'][j]:
+                    tag_object_reply = client.api_call("show-tag",
+                                                       {"uid": objects[i]['tags'][j], "details-level": "full"})
+                    if not tag_object_reply.success:
+                        debug_log("Failed to retrieve tag info for object named '" +
+                                  objects[i]["name"] + "'! Error: " + str(tag_object_reply.error_message) +
+                                  ".", True, True)
+                        continue
+
+                    tag_object = tag_object_reply.data
+                    # replace tag uid with tag object
+                    objects[i]['tags'][j] = tag_object
+
         flat_json = flatten_json(objects[i])
 
         # Special handling for data-center-object types - prepare the data for the import!
@@ -352,9 +370,8 @@ def format_objects(objects):
                 flat_json["data-center-name"] = flat_json["data-center.name"]
 
         string = u"Exporting {0} with uid {1} named {2}" if "name" in objects[i] else u"Exporting {0} with uid {1}"
-        message = string.format(api_type, objects[i]["uid"], objects[i]["name"] if 'name' in objects[i] else "").encode("utf-8")
-        debug_log(message)
-
+        message = string.format(api_type, objects[i]["uid"], objects[i]["name"] if 'name' in objects[i] else "").encode(
+            "utf-8")
         formatted_objects.append(flat_json)
 
     return formatted_objects
@@ -433,7 +450,7 @@ def get_group_objects(data_dict, api_type, group, client, unexportable_objects):
                     break
 
     for api_type in exportable_types:
-        debug_log("Exporting " + singular_to_plural_dictionary[client.api_version][api_type] + 
+        debug_log("Exporting " + singular_to_plural_dictionary[client.api_version][api_type] +
                   " from group [" + group["name"] + "]", True)
         export_general_objects(data_dict, api_type, object_dictionary[api_type], unexportable_objects, client)
 
@@ -446,7 +463,7 @@ def format_and_merge_exception_groups(data_dict, exception_groups):
         sorted_exception_groups.append(find_min_position_group(exception_groups))
     for exception_group in sorted_exception_groups:
         exception_group.pop('positions')
-    format_and_merge_data(data_dict, sorted_exception_groups)
+    format_and_merge_data(data_dict, sorted_exception_groups, client)
 
 
 # TODO AdamG
@@ -468,6 +485,6 @@ def clean_objects(data_dict):
                     local_no_export_fields_and_subfields.remove("from")
                     local_no_export_fields_and_subfields.remove("to")
                 if any(x for x in sub_fields if x in local_no_export_fields_and_subfields) or (
-                            sub_fields[0] in no_export_fields) or (api_type in no_export_fields_by_api_type and any(
+                        sub_fields[0] in no_export_fields) or (api_type in no_export_fields_by_api_type and any(
                     x for x in sub_fields if x in no_export_fields_by_api_type[api_type])):
                     obj.pop(field, None)

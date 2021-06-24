@@ -64,7 +64,7 @@ def export_threat_exception_rulebase(package, layer, layer_uid, threat_rule, exc
 
     debug_log("Exporting threat exceptions from layer [" + layer + "]", True)
 
-    format_and_merge_data(data_dict, rulebase_rules)
+    format_and_merge_data(data_dict, rulebase_rules, client)
 
     debug_log("Exporting placeholders for unexportable objects from layer [" + layer + "]", True)
 
@@ -72,7 +72,7 @@ def export_threat_exception_rulebase(package, layer, layer_uid, threat_rule, exc
 
     debug_log("Exporting layer settings of layer [" + layer + "]", True)
 
-    format_and_merge_data(data_dict, [layer_settings])
+    format_and_merge_data(data_dict, [layer_settings], client)
 
     debug_log("Done exporting layer '" + layer + "'.\n", True)
 

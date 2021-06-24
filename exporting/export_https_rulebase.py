@@ -45,14 +45,14 @@ def export_https_rulebase(package, layer, layer_uid, client):
 
     debug_log("Exporting https rules from layer [" + layer + "]", True)
 
-    format_and_merge_data(data_dict, rulebase_rules)
+    format_and_merge_data(data_dict, rulebase_rules, client)
 
     debug_log("Exporting https sections from layer [" + layer + "]", True)
 
     for rulebase_section in rulebase_sections:
         debug_log("rulebase_sections contains: " + (
                   rulebase_section["name"] if "name" in rulebase_section else "no-name section"))
-    format_and_merge_data(data_dict, rulebase_sections)
+    format_and_merge_data(data_dict, rulebase_sections, client)
 
     debug_log("Exporting https placeholders for unexportable objects from layer [" + layer + "]", True)
 
@@ -60,7 +60,7 @@ def export_https_rulebase(package, layer, layer_uid, client):
 
     debug_log("Exporting https layer settings of layer [" + layer + "]", True)
 
-    format_and_merge_data(data_dict, [layer_settings])
+    format_and_merge_data(data_dict, [layer_settings], client)
 
     debug_log("Done exporting https layer '" + layer + "'.\n", True)
 
