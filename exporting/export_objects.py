@@ -329,6 +329,7 @@ def export_general_objects(data_dict, api_type, object_dictionary, unexportable_
     format_and_merge_data(data_dict, object_dictionary, client)
 
 
+# tag_info_client - to handle objects with 'tags' field as list of uids
 def format_and_merge_data(data_dict, objects, tag_info_client=None):
     global exported_objects
     unexported_objects = [x for x in objects if x["uid"] not in exported_objects]
@@ -340,6 +341,7 @@ def format_and_merge_data(data_dict, objects, tag_info_client=None):
     merge_data(data_dict, formatted_data)
 
 
+# tag_info_client - to handle objects with 'tags' field as list of uids
 def format_objects(objects, tag_info_client=None):
     formatted_objects = []
 
@@ -348,23 +350,21 @@ def format_objects(objects, tag_info_client=None):
         if api_type in special_treatment_types:
             handle_fields(objects[i])
 
+        # when 'tags' field of object is a list of uids
+        # for each uid, replace it with the full info of the tag - using "show-tag"
         if tag_info_client:
-            # when 'tags' field of object is a list of uids
-            # for each uid, replace it with the full info of the tag - using "show-tag"
-            if tag_info_client:
-                for j in range(len(objects[i].get('tags', []))):
-                    if "name" not in objects[i]['tags'][j]:
-                        tag_object_reply = tag_info_client.api_call("show-tag",
-                                                                    {"uid": objects[i]['tags'][j],
-                                                                     "details-level": "full"})
-                        if not tag_object_reply.success:
-                            debug_log("Failed to retrieve tag info for object named '" +
-                                      objects[i]["name"] + "'! Error: " + str(tag_object_reply.error_message) +
-                                      ".", True, True)
-                            continue
+            for j in range(len(objects[i].get('tags', []))):
+                if "name" not in objects[i]['tags'][j]:
+                    tag_object_reply = tag_info_client.api_call("show-tag",
+                                                                {"uid": objects[i]['tags'][j],
+                                                                 "details-level": "full"})
+                    if not tag_object_reply.success:
+                        debug_log("Failed to retrieve tag info for object named '" +
+                                  objects[i]["name"] + "'! Error: " + str(tag_object_reply.error_message) +
+                                  ".", True, True)
+                        continue
 
-                        objects[i]['tags'][j] = tag_object_reply.data
-
+                    objects[i]['tags'][j] = tag_object_reply.data
         flat_json = flatten_json(objects[i])
 
         # Special handling for data-center-object types - prepare the data for the import!
