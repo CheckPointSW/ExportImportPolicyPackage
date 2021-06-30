@@ -329,18 +329,18 @@ def export_general_objects(data_dict, api_type, object_dictionary, unexportable_
     format_and_merge_data(data_dict, object_dictionary, client)
 
 
-def format_and_merge_data(data_dict, objects, tag_info_client=None):
+def format_and_merge_data(data_dict, objects, client=None):
     global exported_objects
     unexported_objects = [x for x in objects if x["uid"] not in exported_objects]
     exported_objects.extend([x["uid"] for x in unexported_objects])
-    if tag_info_client:
-        formatted_data = format_objects(unexported_objects, tag_info_client)
+    if client:
+        formatted_data = format_objects(unexported_objects, client)
     else:
         formatted_data = format_objects(unexported_objects)
     merge_data(data_dict, formatted_data)
 
 
-def format_objects(objects, tag_info_client=None):
+def format_objects(objects, client=None):
     formatted_objects = []
 
     for i in range(len(objects)):
@@ -348,11 +348,11 @@ def format_objects(objects, tag_info_client=None):
         if api_type in special_treatment_types:
             handle_fields(objects[i])
 
-        if tag_info_client:
+        if client:
             if 'tags' in objects[i] and objects[i]['tags'] != []:
                 for j in range(len(objects[i]['tags'])):
                     if "name" not in objects[i]['tags'][j]:
-                        tag_object_reply = tag_info_client.api_call("show-tag",
+                        tag_object_reply = client.api_call("show-tag",
                                                            {"uid": objects[i]['tags'][j], "details-level": "full"})
                         if not tag_object_reply.success:
                             debug_log("Failed to retrieve tag info for object named '" +
