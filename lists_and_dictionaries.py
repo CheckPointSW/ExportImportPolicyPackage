@@ -569,7 +569,7 @@ no_export_fields_by_api_type = {
     "application-site": ["application-id", "risk", "user-defined"],
     "application-site-category": ["user-defined"],
     "data-center-object": ["name-in-data-center", "data-center", "data-center-object-meta-info", "deleted",
-                           "type-in-data-center", "additional-properties"],
+                           "type-in-data-center", "additional-properties"]
 }
 
 fields_to_change = {
