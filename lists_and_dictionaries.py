@@ -557,7 +557,7 @@ group_objects_field = {
 no_export_fields = {"type"}
 
 no_export_fields_and_subfields = ["read-only", "layer", "package", "owner", "icon",
-                                  "domain", "from", "to", "rulebase", "uid", "meta-info", "parent", "groups", "type"]
+                                  "domain", "from", "to", "rulebase", "uid", "meta-info", "parent", "groups", "type", "override-default-settings"]
 
 no_export_fields_by_api_type = {
     "host": ["standard-port-number", "subnet-mask", "type"],
