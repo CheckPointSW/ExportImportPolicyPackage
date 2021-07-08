@@ -14,14 +14,6 @@ should_create_imported_nat_bottom_section = True
 imported_nat_top_section_uid = None
 name_collision_map = {}
 changed_object_names_map = {}
-commands_support_bacth = ['access-role', 'address-range', 'application-site-category',
-                          'application-site-group', 'dns-domain', 'dynamic-object',
-                          'group-with-exclusion', 'host', 'lsv-profile', 'multicast-address-range',
-                          'network', 'package', 'security-zone', 'service-dce-rpc', 'service-group',
-                          'service-icmp', 'service-other', 'service-sctp', 'service-tcp', 'service-udp',
-                          'tacacs-server', 'tacacs-group', 'tag', 'time', 'time-group',
-                          'vpn-community-meshed', 'vpn-community-star', 'wildcard']
-versions_without_batch = ['1', '1.1', '1.2', '1.3', '1.4', '1.5']
 
 
 def import_objects(file_name, client, changed_layer_names, package, layer=None, args=None):
@@ -46,25 +38,18 @@ def import_objects(file_name, client, changed_layer_names, package, layer=None, 
         debug_log("Nothing to import...", True)
 
     version_file_name = [f for f in tar_files if f.name == "version.txt"][0]
-    version_support_batch = False
     with open(version_file_name.name, 'rb') as version_file:
         version = version_file.readline()
         api_versions = client.api_call("show-api-versions")
         if not api_versions.success:
             debug_log("Error getting versions! Aborting import. " + str(api_versions), True, True)
             sys.exit(1)
-        version_to_use = None
         if version in api_versions.data["supported-versions"]:
             client.api_version = version
-            version_to_use = version
         else:
             debug_log(
                 "The version of the imported package doesn't exist in this machine! import with this machines latest version. ",
                 True, True)
-            if "current-version" in api_versions.data:
-                version_to_use = api_versions.data["current-version"]
-        if version_to_use not in versions_without_batch:
-            version_support_batch = True
 
     for general_object_file in general_object_files:
         _, file_extension = os.path.splitext(general_object_file.name)
@@ -103,16 +88,10 @@ def import_objects(file_name, client, changed_layer_names, package, layer=None, 
 
         os.remove(general_object_file.name)
 
-        batch_succeeded = False
-        if api_type in commands_support_bacth and version_support_batch:
-            batch_payload = create_batch_payload(api_type, data, fields, client, args)
-            batch_succeeded = add_batch_objects(api_type, "add-objects-batch", client, args, batch_payload)
-
-        if not batch_succeeded:
-            for line in data:
-                counter, position_decrement_due_to_rules = add_object(line, counter, position_decrement_due_to_rules,
-                                                                      position_decrement_due_to_sections, fields, api_type,
-                                                                      generic_type, layer, layers_to_attach,
+        for line in data:
+            counter, position_decrement_due_to_rules = add_object(line, counter, position_decrement_due_to_rules,
+                                                                  position_decrement_due_to_sections, fields, api_type,
+                                                                  generic_type, layer, layers_to_attach,
                                                                   changed_layer_names, api_call, num_objects, client, args, package)
 
     for rulebase_object_file in rulebase_object_files:
@@ -459,121 +438,6 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
                         exit(1)
 
     return counter + 1, position_decrement_due_to_rule
-
-
-# This is a duplicate code from function add_object
-def create_batch_payload(api_type, data, fields, client, args):
-    batch_payload = {'objects': [{
-        'type': api_type,
-        'list': []
-    }]}
-    list_of_objects = batch_payload['objects'][0]['list']
-    for line in data:
-        payload, _ = create_payload(fields, line, 0, api_type, client.api_version)
-        update_payload(client, payload, api_type, args)
-        list_of_objects.append(payload)
-    return batch_payload
-
-
-def update_payload(client, payload, api_type, args):
-    if args is not None and args.objects_suffix != "":
-        add_suffix_to_objects(payload, api_type, args.objects_suffix)
-
-    # for objects that had collisions, use new name in the imported package
-    for field in ["members", "source", "destination"]:
-        if field in payload:
-            for i, member in enumerate(payload[field]):
-                if member in name_collision_map:
-                    payload[field][i] = name_collision_map[member]
-
-    if "tags" in payload:
-        exported_tags = payload["tags"]
-        tags_to_import = []
-        unresolved_tags = []
-        for tag in exported_tags:
-            tag_name = None
-            if isinstance(tag, dict):
-                if "name" in tag:
-                    tag_name = str(tag["name"])
-
-            if tag_name is None or tag_name == "":
-                debug_log("Unknown tag name for object [{0}]".format(payload["name"]), True, True)
-            else:
-                add_tag_to_payload = False
-                reply = client.api_call("show-tag", {"name": tag_name})
-                if reply.success:
-                    add_tag_to_payload = True
-                elif "generic_err_object_not_found" in reply.data["code"]:
-                    reply = client.api_call("add-tag", tag)
-                    if reply.success:
-                        add_tag_to_payload = True
-
-                if add_tag_to_payload:
-                    tags_to_import.append(tag_name)
-                else:
-                    unresolved_tags.append(tag_name)
-
-        if len(unresolved_tags) > 0:
-            debug_log("Failed to add tags {0} for object [{1}]".format(unresolved_tags, payload["name"]), True, True)
-
-        if len(tags_to_import) > 0:
-            payload["tags"] = tags_to_import
-
-
-def add_batch_objects(api_type, api_call, client, args, payload):
-    api_reply = add_batch_operation(api_type, api_call, client, args, payload)
-    succeeded = False
-    if api_reply.success:
-        debug_log("Managed to import API object from type " + api_type +
-                  " by add-objects-batch API call.\nNow trying to publish.", True)
-        api_reply = handle_publish(client, api_type)
-        if api_reply.success:
-            succeeded = True
-    else:
-        debug_log("Failed to import API object from type " + api_type +
-                  " by add-objects-batch API call.\nError: " + api_reply.error_message + "\nNow trying to discard.", True, True)
-        handle_discard(client)
-
-    if not succeeded:
-        debug_log("Failed to import API object from type " + api_type +
-                  " by add-objects-batch API call.\nFalling back to add objects one by one.", True, True)
-    return succeeded
-
-
-def add_batch_operation(api_type, api_call, client, args, payload):
-    api_reply = client.api_call(api_call, payload)
-    return api_reply
-
-
-def handle_publish(client, api_type):
-    publish_reply = client.api_call("publish", wait_for_task=True)
-    if not publish_reply.success:
-        plural = singular_to_plural_dictionary[client.api_version][api_type].replace('_', ' ') \
-            if api_type in singular_to_plural_dictionary[client.api_version] \
-            else "generic objects of type " + api_type
-        try:
-            debug_log("Failed to publish import of " + plural.capitalize() +
-                      " from said file were not imported!. Error: " + str(publish_reply.error_message),
-                      True, True)
-        except UnicodeEncodeError:
-            try:
-                debug_log("UnicodeEncodeError: " + str(publish_reply.error_message), True, True)
-            except:
-                debug_log("UnicodeEncodeError: .encode('utf-8') FAILED", True, True)
-
-        handle_discard(client)
-    else:
-        debug_log("Managed to publish import of API objects from type " + api_type, True)
-    return publish_reply
-
-
-def handle_discard(client):
-    discard_reply = client.api_call("discard")
-    if not discard_reply.success:
-        debug_log("Failed to discard changes of unsuccessful publish! Terminating. Error: " +
-                  discard_reply.error_message,
-                  True, True)
-        exit(1)
 
 
 def adjust_position_decrement(position, error_message):
