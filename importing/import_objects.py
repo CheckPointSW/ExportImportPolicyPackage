@@ -22,6 +22,9 @@ commands_support_bacth = ['access-role', 'address-range', 'application-site-cate
                           'tacacs-server', 'tacacs-group', 'tag', 'time', 'time-group',
                           'vpn-community-meshed', 'vpn-community-star', 'wildcard']
 versions_without_batch = ['1', '1.1', '1.2', '1.3', '1.4', '1.5']
+not_unique_name_with_dedicated_api = {
+  "Unknown Traffic": "show-application-site-category"
+}
 
 
 def import_objects(file_name, client, changed_layer_names, package, layer=None, args=None):
@@ -389,13 +392,20 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
             debug_log("Not unique name problem \"%s\" - changing payload to use UID instead." % field_value, True, True)
             obj_uid_found_and_used = False
             if field_value not in duplicates_dict:
-                show_objects_reply = client.api_query("show-objects",
+                if field_value in not_unique_name_with_dedicated_api:
+                    debug_log("found not unique name: " + field_value + ", use dedicated " + not_unique_name_with_dedicated_api[field_value] + " API.", True, True)
+                    show_objects_reply = client.api_call(not_unique_name_with_dedicated_api[field_value], {"name": field_value})
+                    if show_objects_reply.success:
+                        duplicates_dict[field_value] = show_objects_reply.data["uid"]
+                        obj_uid_found_and_used = True
+                if not obj_uid_found_and_used:
+                    show_objects_reply = client.api_query("show-objects",
                                                      payload={"in": ["name", "\"" + field_value + "\""]})
-                if show_objects_reply.success:
-                    for obj in show_objects_reply.data:
-                        if obj["name"] == field_value:
-                            duplicates_dict[field_value] = obj["uid"]
-                            obj_uid_found_and_used = True
+                    if show_objects_reply.success:
+                        for obj in show_objects_reply.data:
+                            if obj["name"] == field_value:
+                                duplicates_dict[field_value] = obj["uid"]
+                                obj_uid_found_and_used = True
             else:
                 obj_uid_found_and_used = True
             if obj_uid_found_and_used:
