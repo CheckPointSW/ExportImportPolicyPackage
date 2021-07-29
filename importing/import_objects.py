@@ -23,6 +23,9 @@ commands_support_batch = ['access-role', 'address-range', 'application-site-cate
                           'tacacs-server', 'tacacs-group', 'tag', 'time', 'time-group',
                           'vpn-community-meshed', 'vpn-community-star', 'wildcard']
 rule_support_batch = ['access-rule', 'https-rule', 'nat-rule', 'threat-exception']
+commands_batch_version = "1.6"
+rules_batch_version = "1.9"
+api_current_version = None
 
 
 def clone_globals_batch_rulebase():
@@ -49,8 +52,17 @@ def revert_to_before_rule_batch(should_create_imported_nat_top_section_clone,
         imported_nat_top_section_uid = imported_nat_top_section_uid_clone
 
 
+def is_support_batch(api_type, version):
+    return api_type in commands_support_batch and compare_versions(version, commands_batch_version) != -1
+
+
+def is_support_rule_batch(api_type, version):
+    return api_type in rule_support_batch and compare_versions(version, rules_batch_version) != -1
+
+
 def import_objects(file_name, client, changed_layer_names, package, layer=None, args=None):
     global position_decrements_for_sections
+    global api_current_version
 
     export_tar = tarfile.open(file_name, "r:gz")
     export_tar.extractall()
@@ -73,25 +85,30 @@ def import_objects(file_name, client, changed_layer_names, package, layer=None, 
     version_file_name = [f for f in tar_files if f.name == "version.txt"][0]
     version_support_batch = False
     version_support_rule_batch = False
+    client_version_changed = False
     with open(version_file_name.name, 'rb') as version_file:
         version = version_file.readline()
         api_versions = client.api_call("show-api-versions")
         if not api_versions.success:
             debug_log("Error getting versions! Aborting import. " + str(api_versions), True, True)
             sys.exit(1)
+        if api_current_version is None:
+            if "current-version" in api_versions.data:
+                api_current_version = api_versions.data["current-version"]
         version_to_use = None
         if version in api_versions.data["supported-versions"]:
             client.api_version = version
             version_to_use = version
+            client_version_changed = True
         else:
             debug_log(
                 "The version of the imported package doesn't exist in this machine! import with this machines latest version. ",
                 True, True)
             if "current-version" in api_versions.data:
                 version_to_use = api_versions.data["current-version"]
-        if version_to_use is not None and compare_versions(version_to_use, "1.6") != -1:
+        if version_to_use is not None and compare_versions(version_to_use, commands_batch_version) != -1:
             version_support_batch = True
-        if version_to_use is not None and compare_versions(version_to_use, "1.8") != -1:
+        if version_to_use is not None and compare_versions(version_to_use, rules_batch_version) != -1:
             version_support_rule_batch = True
     for general_object_file in general_object_files:
         _, file_extension = os.path.splitext(general_object_file.name)
@@ -130,6 +147,15 @@ def import_objects(file_name, client, changed_layer_names, package, layer=None, 
 
         os.remove(general_object_file.name)
 
+        client_version = client.api_version
+        if client_version_changed and api_current_version is not None:
+            if version_support_batch is False and is_support_batch(api_type, api_current_version):
+                version_support_batch = True
+                client.api_version = api_current_version
+            elif version_support_rule_batch is False and is_support_rule_batch(api_type, api_current_version):
+                version_support_rule_batch = True
+                client.api_version = api_current_version
+
         support_batch = api_type in commands_support_batch and version_support_batch
         support_rule_batch = api_type in rule_support_batch and version_support_rule_batch
 
@@ -152,6 +178,7 @@ def import_objects(file_name, client, changed_layer_names, package, layer=None, 
             if is_rule_type:
                 command = "add-rules-batch"
             batch_succeeded = add_batch_objects(api_type, command, client, args, batch_payload)
+            client.api_version = client_version
 
         if not batch_succeeded:
             if do_rule_batch_revert:
