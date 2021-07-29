@@ -4,7 +4,7 @@ import tarfile
 import sys
 import copy
 
-from lists_and_dictionaries import singular_to_plural_dictionary, generic_objects_for_rule_fields, import_priority, https_blades_names_map
+from lists_and_dictionaries import singular_to_plural_dictionary, generic_objects_for_rule_fields, import_priority, https_blades_names_map, commands_support_batch, versions_without_batch, not_unique_name_with_dedicated_api
 from utils import debug_log, create_payload, compare_versions, generate_new_dummy_ip_address
 
 duplicates_dict = {}
@@ -15,14 +15,7 @@ should_create_imported_nat_bottom_section = True
 imported_nat_top_section_uid = None
 name_collision_map = {}
 changed_object_names_map = {}
-commands_support_batch = ['access-role', 'address-range', 'application-site-category',
-                          'application-site-group', 'dns-domain', 'dynamic-object',
-                          'group-with-exclusion', 'host', 'lsv-profile', 'multicast-address-range',
-                          'network', 'package', 'security-zone', 'service-dce-rpc', 'service-group',
-                          'service-icmp', 'service-other', 'service-sctp', 'service-tcp', 'service-udp',
-                          'tacacs-server', 'tacacs-group', 'tag', 'time', 'time-group',
-                          'vpn-community-meshed', 'vpn-community-star', 'wildcard']
-rule_support_batch = ['access-rule', 'https-rule', 'nat-rule', 'threat-exception']
+
 commands_batch_version = "1.6"
 rules_batch_version = "1.9"
 api_current_version = None
@@ -471,13 +464,20 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
             debug_log("Not unique name problem \"%s\" - changing payload to use UID instead." % field_value, True, True)
             obj_uid_found_and_used = False
             if field_value not in duplicates_dict:
-                show_objects_reply = client.api_query("show-objects",
+                if field_value in not_unique_name_with_dedicated_api:
+                    debug_log("Found not unique name: \"%s\", using dedicated API: \"%s\""% (field_value, not_unique_name_with_dedicated_api[field_value]), True, True)
+                    show_objects_reply = client.api_call(not_unique_name_with_dedicated_api[field_value], {"name": field_value})
+                    if show_objects_reply.success:
+                        duplicates_dict[field_value] = show_objects_reply.data["uid"]
+                        obj_uid_found_and_used = True
+                if not obj_uid_found_and_used:
+                    show_objects_reply = client.api_query("show-objects",
                                                      payload={"in": ["name", "\"" + field_value + "\""]})
-                if show_objects_reply.success:
-                    for obj in show_objects_reply.data:
-                        if obj["name"] == field_value:
-                            duplicates_dict[field_value] = obj["uid"]
-                            obj_uid_found_and_used = True
+                    if show_objects_reply.success:
+                        for obj in show_objects_reply.data:
+                            if obj["name"] == field_value:
+                                duplicates_dict[field_value] = obj["uid"]
+                                obj_uid_found_and_used = True
             else:
                 obj_uid_found_and_used = True
             if obj_uid_found_and_used:
