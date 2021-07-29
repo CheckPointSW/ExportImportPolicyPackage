@@ -20,16 +20,16 @@ def populate_parser(parser):
                         choices=["import", "export"])
     parser.add_argument("-n", "--name", required=False, help="The name of the policy package to export or import")
     parser.add_argument("-f", "--file", required=False, help="The path to the tar file containing the data to import")
-    parser.add_argument("--all", required=False,
-                        help="Indicates whether to export or import all types of layers", action="store_true")
-    parser.add_argument("-ac", "--access", required=False, default=True,
-                        help="Indicates whether to export or import the Access-Control layers", action="store_true")
-    parser.add_argument("-tp", "--threat", required=False,
-                        help="Indicates whether to export or import the Threat-Prevention layers", action="store_true")
-    parser.add_argument("--nat", required=False, action="store_true",
+    parser.add_argument("--all", required=False, type=str2bool, default=False,
+                        help="Indicates whether to export or import all types of layers",)
+    parser.add_argument("-ac", "--access", required=False, type=str2bool, default=True,
+                        help="Indicates whether to export or import the Access-Control layers")
+    parser.add_argument("-tp", "--threat", required=False, type=str2bool, default=True,
+                        help="Indicates whether to export or import the Threat-Prevention layers")
+    parser.add_argument("--nat", required=False, type=str2bool, default=True,
                         help="Indicates whether to export or import the NAT rules")
-    parser.add_argument("--https", required=False,
-                        help="Indicates whether to export or import the HTTPS Inspection layers", action="store_true")
+    parser.add_argument("--https", required=False, type=str2bool, default=True,
+                        help="Indicates whether to export or import the HTTPS Inspection layers")
     parser.add_argument("-o", "--output-file", required=False, help="The name of output file")
     parser.add_argument("-u", "--username", required=False, default=os.getenv('MGMT_CLI_USER'),
                         help="The management administrator's user name.\nEnvironment variable: MGMT_CLI_USER")
@@ -48,7 +48,7 @@ def populate_parser(parser):
     parser.add_argument("-sid", "--session-id", required=False, default=os.getenv('MGMT_CLI_SESSION_ID'),
                         help="The session identifier (sid) acquired from a previous login operation\nEnvironment variable: MGMT_CLI_SESSION_ID")
     parser.add_argument("-r", "--root", required=False,
-                        action="store_true",
+                        type=str2bool, default=False,
                         help="When running on a management server, use this flag to login with root privileges")
     parser.add_argument("-v", "--version", required=False,
                         default=None,
@@ -64,20 +64,30 @@ def populate_parser(parser):
                         help="The path to the debugging log file\nDefault: get_objects.log\nEnvironment variable: MGMT_CLI_LOG_FILE")
     parser.add_argument("--objects-suffix", required=False, default="",
                         help="Add suffix to user defined object names.")
-    parser.add_argument("--unsafe", required=False, action="store_true",
-                        help="UNSAFE! Ignore certificate verification.")
-    parser.add_argument("--unsafe-auto-accept", required=False, action="store_true",
+    parser.add_argument("--unsafe", required=False, type=str2bool, default=False, help="UNSAFE! Ignore certificate verification.")
+    parser.add_argument("--unsafe-auto-accept", required=False, type=str2bool, default=False,
                         help="UNSAFE! Auto accept fingerprint during certificate verification.")
     parser.add_argument("-t", "--session-timeout", required=False,
                         help="Session expiration timeout in seconds.")
-    parser.add_argument("--force", required=False, default=False, action="store_true",
+    parser.add_argument("--force", required=False, default=False, type=str2bool,
                         help="Force run the command with no confirmation. WARNING! - this will set unsafe-auto-accept to be true as well.")
-    parser.add_argument("--strict", required=False, default=False, action="store_true",
+    parser.add_argument("--strict", required=False, default=False, type=str2bool,
                         help="Stop import on first API error.")
     return parser.parse_args()
 
 
 attribute_export_error_num = 1
+
+
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() == "true":
+        return True
+    elif v.lower() == "false":
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected: true or false')
 
 
 def process_arguments(parser):

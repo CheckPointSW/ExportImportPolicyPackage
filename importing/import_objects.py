@@ -2,6 +2,7 @@ import csv
 import os
 import tarfile
 import sys
+import copy
 
 from lists_and_dictionaries import singular_to_plural_dictionary, generic_objects_for_rule_fields, import_priority, https_blades_names_map, commands_support_batch, versions_without_batch, not_unique_name_with_dedicated_api
 from utils import debug_log, create_payload, compare_versions, generate_new_dummy_ip_address
@@ -15,9 +16,46 @@ imported_nat_top_section_uid = None
 name_collision_map = {}
 changed_object_names_map = {}
 
+commands_batch_version = "1.6"
+rules_batch_version = "1.9"
+api_current_version = None
+
+
+def clone_globals_batch_rulebase():
+    global should_create_imported_nat_top_section
+    global should_create_imported_nat_bottom_section
+    global imported_nat_top_section_uid
+    return copy.copy(should_create_imported_nat_top_section), copy.copy(should_create_imported_nat_bottom_section), \
+           copy.copy(imported_nat_top_section_uid)
+
+
+def revert_to_before_rule_batch(should_create_imported_nat_top_section_clone,
+                                    should_create_imported_nat_bottom_section_clone, imported_nat_top_section_uid_clone):
+    global should_create_imported_nat_top_section
+    global should_create_imported_nat_bottom_section
+    global imported_nat_top_section_uid
+
+    if should_create_imported_nat_top_section != should_create_imported_nat_top_section_clone:
+        should_create_imported_nat_top_section = should_create_imported_nat_top_section_clone
+
+    if should_create_imported_nat_bottom_section != should_create_imported_nat_bottom_section_clone:
+        should_create_imported_nat_bottom_section = should_create_imported_nat_bottom_section_clone
+
+    if imported_nat_top_section_uid != imported_nat_top_section_uid_clone:
+        imported_nat_top_section_uid = imported_nat_top_section_uid_clone
+
+
+def is_support_batch(api_type, version):
+    return api_type in commands_support_batch and compare_versions(version, commands_batch_version) != -1
+
+
+def is_support_rule_batch(api_type, version):
+    return api_type in rule_support_batch and compare_versions(version, rules_batch_version) != -1
+
 
 def import_objects(file_name, client, changed_layer_names, package, layer=None, args=None):
     global position_decrements_for_sections
+    global api_current_version
 
     export_tar = tarfile.open(file_name, "r:gz")
     export_tar.extractall()
@@ -39,25 +77,32 @@ def import_objects(file_name, client, changed_layer_names, package, layer=None, 
 
     version_file_name = [f for f in tar_files if f.name == "version.txt"][0]
     version_support_batch = False
+    version_support_rule_batch = False
+    client_version_changed = False
     with open(version_file_name.name, 'rb') as version_file:
         version = version_file.readline()
         api_versions = client.api_call("show-api-versions")
         if not api_versions.success:
             debug_log("Error getting versions! Aborting import. " + str(api_versions), True, True)
             sys.exit(1)
+        if api_current_version is None:
+            if "current-version" in api_versions.data:
+                api_current_version = api_versions.data["current-version"]
         version_to_use = None
         if version in api_versions.data["supported-versions"]:
             client.api_version = version
             version_to_use = version
+            client_version_changed = True
         else:
             debug_log(
                 "The version of the imported package doesn't exist in this machine! import with this machines latest version. ",
                 True, True)
             if "current-version" in api_versions.data:
                 version_to_use = api_versions.data["current-version"]
-        if version_to_use not in versions_without_batch:
+        if version_to_use is not None and compare_versions(version_to_use, commands_batch_version) != -1:
             version_support_batch = True
-
+        if version_to_use is not None and compare_versions(version_to_use, rules_batch_version) != -1:
+            version_support_rule_batch = True
     for general_object_file in general_object_files:
         _, file_extension = os.path.splitext(general_object_file.name)
         if file_extension != ".csv":
@@ -95,12 +140,46 @@ def import_objects(file_name, client, changed_layer_names, package, layer=None, 
 
         os.remove(general_object_file.name)
 
+        client_version = client.api_version
+        if client_version_changed and api_current_version is not None:
+            if version_support_batch is False and is_support_batch(api_type, api_current_version):
+                version_support_batch = True
+                client.api_version = api_current_version
+            elif version_support_rule_batch is False and is_support_rule_batch(api_type, api_current_version):
+                version_support_rule_batch = True
+                client.api_version = api_current_version
+
+        support_batch = api_type in commands_support_batch and version_support_batch
+        support_rule_batch = api_type in rule_support_batch and version_support_rule_batch
+
+        should_create_imported_nat_top_section_clone = None
+        should_create_imported_nat_bottom_section_clone = None
+        imported_nat_top_section_uid_clone = None
+        do_rule_batch_revert = False
         batch_succeeded = False
-        if api_type in commands_support_batch and version_support_batch:
-            batch_payload = create_batch_payload(api_type, data, fields, client, args)
-            batch_succeeded = add_batch_objects(api_type, "add-objects-batch", client, args, batch_payload)
+
+        if support_batch or support_rule_batch:
+            is_rule_type = api_type in rule_support_batch
+            if is_rule_type:
+                should_create_imported_nat_top_section_clone, should_create_imported_nat_bottom_section_clone, \
+                imported_nat_top_section_uid_clone = clone_globals_batch_rulebase()
+                do_rule_batch_revert = True
+
+            batch_payload = create_batch_payload(api_type, data, fields, client, args, is_rule_type,
+                                                 changed_layer_names, generic_type, layer, layers_to_attach, package)
+            command = "add-objects-batch"
+            if is_rule_type:
+                command = "add-rules-batch"
+            batch_succeeded = add_batch_objects(api_type, command, client, args, batch_payload)
+            client.api_version = client_version
 
         if not batch_succeeded:
+            if do_rule_batch_revert:
+                # Revert rule batch globals
+                revert_to_before_rule_batch(should_create_imported_nat_top_section_clone,
+                                                should_create_imported_nat_bottom_section_clone,
+                                                imported_nat_top_section_uid_clone)
+
             for line in data:
                 counter, position_decrement_due_to_rules = add_object(line, counter, position_decrement_due_to_rules,
                                                                       position_decrement_due_to_sections, fields, api_type,
@@ -325,7 +404,12 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
             error_msg = api_reply.data["warnings"][0]["message"]
         else:
             error_msg = api_reply.error_message
-        log_err_msg = "Failed to import {0}{1}. Error: {2}".format(api_type, " with name [" + payload["name"].encode("utf-8") + "]" if "name" in payload else "", error_msg)
+        log_err_msg = ""
+        try:
+            log_err_msg = "Failed to import {0}{1}. Error: {2}".format(api_type, " with name [" + payload[
+                "name"].encode('utf-8').strip() + "]" if "name" in payload else "", error_msg)
+        except UnicodeEncodeError:
+            log_err_msg = "Failed to import {0} object. Error: {1}".format(api_type, error_msg)
 
         if "More than one object" in api_reply.error_message:
             log_err_msg = api_reply.error_message + ". Cannot import this object"
@@ -460,20 +544,32 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
 
 
 # This is a duplicate code from function add_object
-def create_batch_payload(api_type, data, fields, client, args):
+def create_batch_payload(api_type, data, fields, client, args, is_rule_type, changed_layer_names,
+                         generic_type, layer, layers_to_attach, package):
     batch_payload = {'objects': [{
         'type': api_type,
         'list': []
     }]}
+
+    if is_rule_type:
+        if api_type == "nat-rule":
+            batch_payload['objects'][0]['layer'] = package
+            batch_payload['objects'][0]['first-position'] = "bottom"
+        else:
+            batch_payload['objects'][0]['layer'] = layer
+            batch_payload['objects'][0]['first-position'] = "top"
+
     list_of_objects = batch_payload['objects'][0]['list']
     for line in data:
         payload, _ = create_payload(fields, line, 0, api_type, client.api_version)
-        update_payload(client, payload, api_type, args)
+        update_payload_batch(client, payload, api_type, args, is_rule_type, changed_layer_names, package,
+                             generic_type, layer, layers_to_attach)
         list_of_objects.append(payload)
     return batch_payload
 
 
-def update_payload(client, payload, api_type, args):
+def update_payload_batch(client, payload, api_type, args, is_rule_type, changed_layer_names, package, generic_type,
+                         layer, layers_to_attach):
     if args is not None and args.objects_suffix != "":
         add_suffix_to_objects(payload, api_type, args.objects_suffix)
 
@@ -517,29 +613,139 @@ def update_payload(client, payload, api_type, args):
         if len(tags_to_import) > 0:
             payload["tags"] = tags_to_import
 
+    if is_rule_type:
+        global should_create_imported_nat_top_section
+        global should_create_imported_nat_bottom_section
+        global imported_nat_top_section_uid
 
-def add_batch_objects(api_type, api_call, client, args, payload):
-    api_reply = add_batch_operation(api_type, api_call, client, args, payload)
+        if "nat-rule" in api_type:
+            # For NAT rules, the 'package' parameter is the name of the policy package!!!
+            if package is None:
+                debug_log("Internal error: package name is unknown", True, True)
+            payload["package"] = package
+            # --- NAT rules specific logic ---
+            # Importing only rules, without sections.
+            # Rules marked as "__before_auto_rules = TRUE" will be imported at the TOP of the rulebase, inside a new section "IMPORTED UPPER RULES".
+            # There is an additional new section "Original Upper Rules" at the bottom of "IMPORTED UPPER RULES".
+            # Rules marked as "__before_auto_rules = FALSE" will be imported at the BOTTOM of the rulebase, inside a new section "IMPORTED LOWER RULES".
+            # There will be no rule merges!!!
+            before_auto_rules = payload["__before_auto_rules"]
+            payload.pop("__before_auto_rules", None)
+            if "true" in before_auto_rules:
+                if should_create_imported_nat_top_section:
+                    should_create_imported_nat_top_section = False
+                    nat_section_payload = {}
+                    nat_section_payload["package"] = package
+                    nat_section_payload["position"] = "top"
+                    # --> we add the footer section first!!!
+                    nat_section_payload["name"] = "Original Upper Rules"
+                    client.api_call("add-nat-section", nat_section_payload)
+                    # <--
+                    nat_section_payload["name"] = "IMPORTED UPPER RULES"
+                    nat_section_reply = client.api_call("add-nat-section", nat_section_payload)
+                    if nat_section_reply.success:
+                        imported_nat_top_section_uid = nat_section_reply.data["uid"]
+                if imported_nat_top_section_uid is None:
+                    payload["position"] = "bottom"
+                else:
+                    sub_payload = {}
+                    sub_payload["bottom"] = imported_nat_top_section_uid
+                    payload["position"] = sub_payload
+            else:
+                if should_create_imported_nat_bottom_section:
+                    should_create_imported_nat_bottom_section = False
+                    nat_section_payload = {}
+                    nat_section_payload["package"] = package
+                    nat_section_payload["position"] = "bottom"
+                    nat_section_payload["name"] = "IMPORTED LOWER RULES"
+                    client.api_call("add-nat-section", nat_section_payload)
+                payload["position"] = "bottom"
+        else:
+            if "position" in payload:
+                if "rule" in api_type:
+                    if payload["action"] == "Drop":
+                        if "action-settings" in payload:
+                            payload.pop("action-settings")
+                        if "user-check" in payload:
+                            if "frequency" in payload["user-check"]:
+                                payload["user-check"].pop("frequency")
+                            if "custom-frequency" in payload["user-check"]:
+                                payload["user-check"].pop("custom-frequency")
+                            if "confirm" in payload["user-check"]:
+                                payload["user-check"].pop("confirm")
+
+            if generic_type:
+                payload["create"] = generic_type
+            if "layer" in api_type:
+                check_duplicate_layer(payload, changed_layer_names, api_type, client)
+                if compare_versions(client.api_version, "1.1") != -1 and "https" not in api_type:
+                    payload["add-default-rule"] = "false"
+                if layer is None:
+                    if "access-layer" in api_type:
+                        # ---> This code segment distinguishes between an inline layer and an ordered layer during import
+                        is_ordered_access_control_layer = payload["__ordered_access_control_layer"]
+                        payload.pop("__ordered_access_control_layer", None)
+                        if "true" in is_ordered_access_control_layer:
+                            layers_to_attach["access"].append(payload["name"])  # ordered access layer
+                        # <--- end of code segment
+                    elif "threat-layer" in api_type:
+                        layers_to_attach["threat"].append(payload["name"])
+                    elif "https-layer" in api_type:
+                        layers_to_attach["https"].append(payload["name"])
+            elif "rule" in api_type or "section" in api_type or \
+                    (api_type == "threat-exception" and "exception-group-name" not in payload):
+                payload["layer"] = layer
+                if args is not None and args.objects_suffix != "":
+                    payload["layer"] += args.objects_suffix
+                if client.api_version != "1" and api_type == "access-rule" and "track-alert" in payload:
+                    payload["track"] = {}
+                    payload["track"]["alert"] = payload["track-alert"]
+                    payload.pop("track-alert", None)
+            elif api_type == "exception-group" and "applied-threat-rules" in payload:
+                for applied_rule in payload["applied-threat-rules"]:
+                    if applied_rule["layer"] in changed_layer_names.keys():
+                        applied_rule["layer"] = changed_layer_names[applied_rule["layer"]]
+        if "https-rule" in api_type:
+            if "blade" in payload and len(payload["blade"]) > 0:
+                if len(payload["blade"]) == 1 and payload["blade"][0] == "All":
+                    del payload["blade"]
+                else:
+                    exported_blades = payload["blade"]
+                    blades_to_import = []
+                    for blade in exported_blades:
+                        if blade in https_blades_names_map:
+                            blades_to_import.append(https_blades_names_map[blade])
+                        else:
+                            blades_to_import.append(blade)
+                    payload["blade"] = blades_to_import
+
+
+def add_batch_objects(api_type, command, client, args, payload):
+    api_reply = add_batch_operation(api_type, command, client, args, payload)
     succeeded = False
     if api_reply.success:
         debug_log("Managed to import API object from type " + api_type +
-                  " by add-objects-batch API call.\nNow trying to publish.", True)
+                  " by " + command + " API call.\nNow trying to publish.", True)
         api_reply = handle_publish(client, api_type)
         if api_reply.success:
             succeeded = True
     else:
-        debug_log("Failed to import API object from type " + api_type +
-                  " by add-objects-batch API call.\nError: " + api_reply.error_message + "\nNow trying to discard.", True, True)
+        err_msg = ""
+        if 'tasks' in api_reply.data and len(api_reply.data['tasks']) > 0 and 'progress-description' in api_reply.data['tasks'][0]:
+            err_msg = api_reply.data['tasks'][0]['progress-description']
+        debug_log("Failed to import API object from type " + api_type + " by " + command + " API call.\n"
+                  + "Message: " + err_msg +
+                  "\nNow trying to discard.", True, True)
         handle_discard(client)
 
     if not succeeded:
         debug_log("Failed to import API object from type " + api_type +
-                  " by add-objects-batch API call.\nFalling back to add objects one by one.", True, True)
+                  " by " + command + " API call.\nFalling back to add objects one by one.", True, True)
     return succeeded
 
 
-def add_batch_operation(api_type, api_call, client, args, payload):
-    api_reply = client.api_call(api_call, payload)
+def add_batch_operation(api_type, command, client, args, payload):
+    api_reply = client.api_call(command, payload)
     return api_reply
 
 
@@ -551,7 +757,7 @@ def handle_publish(client, api_type):
             else "generic objects of type " + api_type
         try:
             debug_log("Failed to publish import of " + plural.capitalize() +
-                      " from said file were not imported!. Error: " + str(publish_reply.error_message),
+                      " from said file were not imported!. Message: " + str(publish_reply.error_message),
                       True, True)
         except UnicodeEncodeError:
             try:
