@@ -603,3 +603,18 @@ https_blades_names_map = {
     "URL Filtering": "Url Filtering",
     "Data Loss Prevention": "DLP"
 }
+
+commands_support_batch = ['access-role', 'address-range', 'application-site-category',
+                          'application-site-group', 'dns-domain', 'dynamic-object',
+                          'group-with-exclusion', 'host', 'lsv-profile', 'multicast-address-range',
+                          'network', 'package', 'security-zone', 'service-dce-rpc', 'service-group',
+                          'service-icmp', 'service-other', 'service-sctp', 'service-tcp', 'service-udp',
+                          'tacacs-server', 'tacacs-group', 'tag', 'time', 'time-group',
+                          'vpn-community-meshed', 'vpn-community-star', 'wildcard']
+                          
+rule_support_batch = ['access-rule', 'https-rule', 'nat-rule', 'threat-exception']
+
+not_unique_name_with_dedicated_api = {
+  "Unknown Traffic": "show-application-site-category"
+}
+
