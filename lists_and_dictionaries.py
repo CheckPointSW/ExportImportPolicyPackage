@@ -611,9 +611,10 @@ commands_support_batch = ['access-role', 'address-range', 'application-site-cate
                           'service-icmp', 'service-other', 'service-sctp', 'service-tcp', 'service-udp',
                           'tacacs-server', 'tacacs-group', 'tag', 'time', 'time-group',
                           'vpn-community-meshed', 'vpn-community-star', 'wildcard']
-
-versions_without_batch = ['1', '1.1', '1.2', '1.3', '1.4', '1.5']
+                          
+rule_support_batch = ['access-rule', 'https-rule', 'nat-rule', 'threat-exception']
 
 not_unique_name_with_dedicated_api = {
   "Unknown Traffic": "show-application-site-category"
 }
+

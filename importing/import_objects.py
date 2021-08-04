@@ -4,7 +4,8 @@ import tarfile
 import sys
 import copy
 
-from lists_and_dictionaries import singular_to_plural_dictionary, generic_objects_for_rule_fields, import_priority, https_blades_names_map, commands_support_batch, versions_without_batch, not_unique_name_with_dedicated_api
+from lists_and_dictionaries import (singular_to_plural_dictionary, generic_objects_for_rule_fields, import_priority, https_blades_names_map,
+ commands_support_batch, rule_support_batch, not_unique_name_with_dedicated_api)
 from utils import debug_log, create_payload, compare_versions, generate_new_dummy_ip_address
 
 duplicates_dict = {}
