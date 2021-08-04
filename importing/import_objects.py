@@ -16,7 +16,6 @@ should_create_imported_nat_bottom_section = True
 imported_nat_top_section_uid = None
 name_collision_map = {}
 changed_object_names_map = {}
-
 commands_batch_version = "1.6"
 rules_batch_version = "1.9"
 api_current_version = None
