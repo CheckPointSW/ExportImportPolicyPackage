@@ -324,6 +324,8 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
             updatable_objects_repository_reply = client.api_call("update-updatable-objects-repository-content", wait_for_task=True)
             if updatable_objects_repository_reply.success:
                 updatable_objects_repository_initliazed = True
+            else:
+                debug_log("Failed to update updatable objects repository \"%s\"" % updatable_objects_repository_reply.error_message, True, True)
         updatable_object_payload = {}
         if "uid-in-updatable-objects-repository" in payload:
             updatable_object_payload["uid-in-updatable-objects-repository"] = payload[
