@@ -13,6 +13,7 @@ position_decrements_for_sections = []
 missing_parameter_set = set()
 should_create_imported_nat_top_section = True
 should_create_imported_nat_bottom_section = True
+updatable_objects_repository_initliazed = False
 imported_nat_top_section_uid = None
 name_collision_map = {}
 changed_object_names_map = {}
@@ -318,6 +319,13 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
                     applied_rule["layer"] = changed_layer_names[applied_rule["layer"]]
 
     if "updatable-object" in api_type:
+        global updatable_objects_repository_initliazed
+        if not updatable_objects_repository_initliazed:
+            updatable_objects_repository_reply = client.api_call("update-updatable-objects-repository-content", wait_for_task=True)
+            if updatable_objects_repository_reply.success:
+                updatable_objects_repository_initliazed = True
+            else:
+                debug_log("Failed to update updatable objects repository \"%s\"" % updatable_objects_repository_reply.error_message, True, True)
         updatable_object_payload = {}
         if "uid-in-updatable-objects-repository" in payload:
             updatable_object_payload["uid-in-updatable-objects-repository"] = payload[
