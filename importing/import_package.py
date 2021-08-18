@@ -55,7 +55,7 @@ def import_package(client, args):
     num_global_access, num_global_threat = count_global_layers(client, package)
 
     access_layer_position = num_global_access + 1
-    threat_layer_position = num_global_threat + 2
+    threat_layer_position = num_global_threat + 3
 
     access_layers = []
     threat_layers = []
