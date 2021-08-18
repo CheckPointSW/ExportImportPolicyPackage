@@ -79,21 +79,20 @@ def import_objects(file_name, client, changed_layer_names, package, layer=None, 
     version_file_name = [f for f in tar_files if f.name == "version.txt"][0]
     version_support_batch = False
     version_support_rule_batch = False
-    client_version_changed = False
+    if api_current_version is None:
+        api_versions = client.api_call("show-api-versions")
+        if api_versions.success and "current-version" in api_versions.data:
+            api_current_version = api_versions.data["current-version"]
     with open(version_file_name.name, 'rb') as version_file:
         version = version_file.readline()
         api_versions = client.api_call("show-api-versions")
         if not api_versions.success:
             debug_log("Error getting versions! Aborting import. " + str(api_versions), True, True)
             sys.exit(1)
-        if api_current_version is None:
-            if "current-version" in api_versions.data:
-                api_current_version = api_versions.data["current-version"]
         version_to_use = None
         if version in api_versions.data["supported-versions"]:
             client.api_version = version
             version_to_use = version
-            client_version_changed = True
         else:
             debug_log(
                 "The version of the imported package doesn't exist in this machine! import with this machines latest version. ",
@@ -142,13 +141,15 @@ def import_objects(file_name, client, changed_layer_names, package, layer=None, 
         os.remove(general_object_file.name)
 
         client_version = client.api_version
-        if client_version_changed and api_current_version is not None:
-            if version_support_batch is False and is_support_batch(api_type, api_current_version):
+        if api_current_version is not None:
+            if is_support_batch(api_type, api_current_version):
+                if compare_versions(client.api_version, commands_batch_version) == -1:
+                    client.api_version = api_current_version
                 version_support_batch = True
-                client.api_version = api_current_version
-            elif version_support_rule_batch is False and is_support_rule_batch(api_type, api_current_version):
+            elif is_support_rule_batch(api_type, api_current_version):
+                if compare_versions(client.api_version, rules_batch_version) == -1:
+                    client.api_version = api_current_version
                 version_support_rule_batch = True
-                client.api_version = api_current_version
 
         support_batch = api_type in commands_support_batch and version_support_batch
         support_rule_batch = api_type in rule_support_batch and version_support_rule_batch
@@ -172,8 +173,8 @@ def import_objects(file_name, client, changed_layer_names, package, layer=None, 
             if is_rule_type:
                 command = "add-rules-batch"
             batch_succeeded = add_batch_objects(api_type, command, client, args, batch_payload)
-            client.api_version = client_version
 
+        client.api_version = client_version
         if not batch_succeeded:
             if do_rule_batch_revert:
                 # Revert rule batch globals
@@ -739,10 +740,16 @@ def add_batch_objects(api_type, command, client, args, payload):
             succeeded = True
     else:
         err_msg = ""
-        if 'tasks' in api_reply.data and len(api_reply.data['tasks']) > 0 and 'progress-description' in api_reply.data['tasks'][0]:
-            err_msg = api_reply.data['tasks'][0]['progress-description']
+        if 'tasks' in api_reply.data and isinstance(api_reply.data['tasks'], list):
+            if len(api_reply.data['tasks']) > 0 and 'progress-description' in api_reply.data['tasks'][0]:
+                err_msg = api_reply.data['tasks'][0]['progress-description']
+        else:
+            try:
+                err_msg = api_reply.error_message
+            except AttributeError:
+                pass
         debug_log("Failed to import API object from type " + api_type + " by " + command + " API call.\n"
-                  + "Message: " + err_msg +
+                  + err_msg +
                   "\nNow trying to discard.", True, True)
         handle_discard(client)
 
