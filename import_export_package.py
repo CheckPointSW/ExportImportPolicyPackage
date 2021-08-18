@@ -22,7 +22,7 @@ def get_version(client):
 
 if __name__ == "__main__":
 
-    arg_parser = argparse.ArgumentParser(description="R80.X Policy Package Export/Import Tool, V4.1")
+    arg_parser = argparse.ArgumentParser(description="R80.X Policy Package Export/Import Tool, V4.2")
     args = process_arguments(arg_parser)
     if args.force:
         args.unsafe_auto_accept = True
