@@ -3,9 +3,9 @@ import sys
 import tarfile
 import time
 
-from export_access_rulebase import export_access_rulebase
-from export_nat_rulebase import export_nat_rulebase
-from export_objects import merge_data
+from exporting.export_access_rulebase import export_access_rulebase
+from exporting.export_nat_rulebase import export_nat_rulebase
+from exporting.export_objects import merge_data
 from exporting.export_threat_rulebase import export_threat_rulebase
 from exporting.export_https_rulebase import export_https_rulebase
 from lists_and_dictionaries import singular_to_plural_dictionary

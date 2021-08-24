@@ -22,7 +22,7 @@ def get_version(client):
 
 if __name__ == "__main__":
 
-    arg_parser = argparse.ArgumentParser(description="R80.X Policy Package Export/Import Tool, V4.2")
+    arg_parser = argparse.ArgumentParser(description="R80.X Policy Package Export/Import Tool, V5.0")
     args = process_arguments(arg_parser)
     if args.force:
         args.unsafe_auto_accept = True
@@ -45,14 +45,14 @@ if __name__ == "__main__":
                 payload["session-timeout"] = args.session_timeout
             client.login_as_root(domain=args.domain, payload=payload)
         elif args.login == '3':
-            args.session_file = raw_input("Please enter path to session file: ")
+            args.session_file = input("Please enter path to session file: ")
             client.sid = extract_sid_from_session_file(args.session_file)
             handle_login_fail(not client.sid, "Could not extract SID form Session-File!")
             test_reply = client.api_call("show-hosts", {"limit": 1})
             handle_login_fail(not test_reply.success, "Extract SID is invalid!")
             get_version(client)
         elif args.login == '4':
-            client.sid = raw_input("Please enter sid: ")
+            client.sid = input("Please enter sid: ")
             test_reply = client.api_call("show-hosts", {"limit": 1})
             handle_login_fail(not test_reply.success, "Supplied SID is invalid!")
             get_version(client)

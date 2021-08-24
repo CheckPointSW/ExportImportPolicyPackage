@@ -373,7 +373,7 @@ def format_objects(objects, tag_info_client=None):
                 flat_json["data-center-name"] = flat_json["data-center.name"]
 
         string = u"Exporting {0} with uid {1} named {2}" if "name" in objects[i] else u"Exporting {0} with uid {1}"
-        message = string.format(api_type, objects[i]["uid"], objects[i]["name"] if 'name' in objects[i] else "").encode("utf-8")
+        message = string.format(api_type, objects[i]["uid"], objects[i]["name"] if 'name' in objects[i] else "")
         debug_log(message)
 
         formatted_objects.append(flat_json)
@@ -481,7 +481,7 @@ def cleanse_object_dictionary(object_dictionary):
 def clean_objects(data_dict):
     for api_type in data_dict:
         for obj in data_dict[api_type]:
-            for field in obj.keys():
+            for field in list(obj):
                 sub_fields = field.split(".")
                 local_no_export_fields_and_subfields = list(no_export_fields_and_subfields)
                 if api_type == "time":
@@ -491,4 +491,4 @@ def clean_objects(data_dict):
                 if any(x for x in sub_fields if x in local_no_export_fields_and_subfields) or (
                             sub_fields[0] in no_export_fields) or (api_type in no_export_fields_by_api_type and any(
                     x for x in sub_fields if x in no_export_fields_by_api_type[api_type])):
-                    obj.pop(field, None)
+                    obj.pop(field,None)

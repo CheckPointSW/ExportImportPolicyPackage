@@ -41,7 +41,7 @@ def import_package(client, args):
             choice = ""
             chosen = False
             while not chosen:
-                choice = raw_input()
+                choice = input()
                 if choice not in ["1", "2"]:
                     print("Please enter either '1' or '2'")
                 else:
