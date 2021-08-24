@@ -132,8 +132,8 @@ def debug_log(string, print_to_stdout=False, print_to_error_log=False):
 def print_safe(string, file_to_write):
     try:
         print(string, file=file_to_write)
-    except:
-        file_to_write.write(string.encode())
+    except UnicodeEncodeError:
+        print(string.encode('utf-8'), file=file_to_write)
 
 
 
