@@ -1,7 +1,8 @@
 from __future__ import print_function
-
+import argparse
 import copy
 import csv
+from functools import cmp_to_key
 import imp
 import json
 import os
@@ -102,7 +103,7 @@ def process_arguments(parser):
 
     if args.debug and args.log_file:
         try:
-            log_file = open(args.log_file, "wb")
+            log_file = open(args.log_file, "w",newline='')
         except IOError as e:
             debug_log("Could not open given log file [" + args.log_file + "] for writing : " + str(e) + ". "
                                                                                                         "Sending debug information to stdout.",
@@ -115,7 +116,7 @@ def process_arguments(parser):
 
 def debug_log(string, print_to_stdout=False, print_to_error_log=False):
     if debug:
-        string += '\n'
+        string += "\n"
         # If we have a log file set by a program argument flag
         if log_file:
             print_safe(string, log_file)
@@ -131,8 +132,8 @@ def debug_log(string, print_to_stdout=False, print_to_error_log=False):
 def print_safe(string, file_to_write):
     try:
         print(string, file=file_to_write)
-    except UnicodeEncodeError:
-        print(string.encode('utf-8'), file=file_to_write)
+    except:
+        file_to_write.write(string.encode())
 
 
 # Helper function. Compares two strings of version numbers -> "1.2.1" > "1.1", "0.9.0" == "0.9"
@@ -240,7 +241,7 @@ def export_to_tar(data_dict, timestamp, tar, lst, api_version, ignore_list=None)
                 file_command = "add-" + api_type
             file_name_csv = str(counter).zfill(2) + "__" + "__" + file_command + "__" + timestamp + ".csv"
             file_name_json = str(counter).zfill(2) + "__" + "__" + file_command + "__" + timestamp + ".json"
-            with open(file_name_csv, "wb") as tar_file_csv, open(file_name_json, "wb") as tar_file_json:
+            with open(file_name_csv, "w", newline='') as tar_file_csv, open(file_name_json, "w", newline='') as tar_file_json:
                 write_data(data_dict[api_type], tar_file_csv, ".csv")
                 write_data(data_dict[api_type], tar_file_json, ".json")
             tar.add(file_name_csv)
@@ -254,7 +255,7 @@ def export_to_tar(data_dict, timestamp, tar, lst, api_version, ignore_list=None)
         counter += 1
 
     file_name_version = "version.txt"
-    with open(file_name_version, "wb") as tar_file_version:
+    with open(file_name_version, "w", newline='') as tar_file_version:
         tar_file_version.write(api_version)
     tar.add(file_name_version)
     try:
@@ -296,7 +297,7 @@ def flat_json_to_csv(json_data):
                 keys.append(key)
 
     keys.sort()
-    special_keys.sort(natural_sort_cmp)
+    special_keys.sort(key=cmp_to_key(natural_sort_cmp))
 
     keys.extend(special_keys)
     res = [keys]
@@ -310,11 +311,11 @@ def flat_json_to_csv(json_data):
                     string = "true"
                 else:
                     string = "false"
-            elif isinstance(attribute, int) or isinstance(attribute, long):
+            elif isinstance(attribute, int):
                 string = str(attribute)
             else:
                 try:
-                    string = attribute.encode('utf-8').replace('\\\\', '\\')
+                    string = attribute.replace('\\\\', '\\')
                 except UnicodeEncodeError:
                     string = "ATTRIBUTE_EXPORT_ERROR_" + attribute_export_error_num
                     attribute_export_error_num += 1
@@ -335,7 +336,7 @@ def natural_sort_cmp(s1, s2):
 def flatten_json(json_node):
     flat_json = {}
     if isinstance(json_node, dict):
-        for key in json_node.keys():
+        for key in list(json_node):
             if key in fields_to_exclude_in_the_presence_of_other_fields and \
                             fields_to_exclude_in_the_presence_of_other_fields[key] in json_node.keys():
                 continue
@@ -521,3 +522,6 @@ def generate_import_error_report():
                 exp_err_file.write(err_msg)
             except UnicodeEncodeError:
                 exp_err_file.write(err_msg.encode('utf-8'))
+
+def cmp(a, b):
+    return (a > b) - (a < b)

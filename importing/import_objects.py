@@ -3,6 +3,7 @@ import os
 import tarfile
 import sys
 import copy
+from functools import cmp_to_key
 
 from lists_and_dictionaries import (singular_to_plural_dictionary, generic_objects_for_rule_fields, import_priority, https_blades_names_map,
  commands_support_batch, rule_support_batch, not_unique_name_with_dedicated_api)
@@ -69,7 +70,7 @@ def import_objects(file_name, client, changed_layer_names, package, layer=None, 
     rulebase_object_files = [general_object_file for general_object_file in tar_files if
                              os.path.splitext(general_object_file.name)[1] == ".gz"]
 
-    general_object_files.sort(compare_general_object_files)
+    general_object_files.sort(key=cmp_to_key(compare_general_object_files))
 
     layers_to_attach = {"access": [], "threat": [], "https": []}
 
@@ -124,7 +125,7 @@ def import_objects(file_name, client, changed_layer_names, package, layer=None, 
                                if api_type in singular_to_plural_dictionary[
             client.api_version] else "generic objects of type " + api_type), True)
 
-        with open(general_object_file.name, 'rb') as csv_file:
+        with open(general_object_file.name, 'rt') as csv_file:
             reader = csv.reader(csv_file)
             num_objects = len(list(reader)) - 1
             csv_file.seek(0)
@@ -135,7 +136,7 @@ def import_objects(file_name, client, changed_layer_names, package, layer=None, 
                 line = next(reader, None)
                 if line is None:
                     break
-                line = [unicode(item, 'utf-8') for item in line]
+                line = [str(item) for item in line]
                 data.append(line)
 
         os.remove(general_object_file.name)
@@ -516,7 +517,7 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
             exit(1)
     else:
         imported_name = payload["name"] if "name" in payload else ""
-        debug_log("Imported {0}{1}".format(api_type, " with name [" + imported_name.encode("utf-8") + "]"))
+        debug_log("Imported {0}{1}".format(api_type, " with name [" + imported_name + "]"))
         if counter % 20 == 0 or counter == num_objects:
             percentage = int(float(counter) / float(num_objects) * 100)
             debug_log("Imported {0} out of {1} {2} ({3}%)".format(counter, num_objects,

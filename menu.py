@@ -150,7 +150,7 @@ class Menu:
     def handle_input(self):
         if self.level == 0:
             try:
-                choice = int(raw_input())
+                choice = int(input())
                 if choice == 1:
                     self.self_args.operation = "import"
                 elif choice == 2:
@@ -164,14 +164,14 @@ class Menu:
             self.export = self.self_args.operation == "export"
             self.level = 1
         elif self.level == 1 and self.export:
-            self.self_args.name = raw_input()
+            self.self_args.name = input()
             self.level = 2
         elif self.level == 1 and not self.export:
-            self.self_args.file = raw_input()
+            self.self_args.file = input()
             self.level = 2
         elif self.level == 2:
             try:
-                choice = int(raw_input())
+                choice = int(input())
                 if choice not in range(1, len(self.options) + 1) and not choice == 99:
                     self.display_wrong_choice()
                 elif choice == 99:
@@ -186,7 +186,7 @@ class Menu:
                 self.display_wrong_choice()
         elif self.level == 3:
             try:
-                choice = int(raw_input())
+                choice = int(input())
                 if choice == 1:
                     self.level = 4
                 elif choice == 2:
@@ -204,7 +204,7 @@ class Menu:
                 self.display_wrong_choice()
         elif self.level == 4 and self.export:
             try:
-                choice = int(raw_input())
+                choice = int(input())
                 if choice == 1:
                     self.self_args.access = not self.self_args.access
                     self.menu_print(
@@ -223,40 +223,40 @@ class Menu:
                         "Exporting of HTTPS Inspection layers " + "enabled" if self.self_args.https else "disabled", 2)
                 elif choice == 5:
                     self.menu_print("Please enter the output file name:", 0)
-                    self.self_args.output_file = raw_input()
+                    self.self_args.output_file = input()
                 elif choice == 6:
                     self.menu_print("Please enter the IP address of the management server:", 0)
-                    self.self_args.management = raw_input()
+                    self.self_args.management = input()
                 elif choice == 7:
                     self.menu_print("Please enter the port on the management server to connect to:", 0)
-                    self.self_args.port = raw_input()
+                    self.self_args.port = input()
                 elif choice == 8:
                     self.menu_print("Please enter the IP address or name of the domain you wish to connect to:", 0)
-                    self.self_args.domain = raw_input()
+                    self.self_args.domain = input()
                 self.level = 3
             except ValueError:
                 self.display_wrong_choice()
         elif self.level == 4 and not self.export:
             try:
-                choice = int(raw_input())
+                choice = int(input())
                 if choice == 1:
                     self.menu_print("Please enter a name for the imported package", 0)
-                    self.self_args.name = raw_input()
+                    self.self_args.name = input()
                 elif choice == 2:
                     self.menu_print("Please enter the IP address of the management server:", 0)
-                    self.self_args.management = raw_input()
+                    self.self_args.management = input()
                 elif choice == 3:
                     self.menu_print("Please enter the port on the management server to connect to:", 0)
-                    self.self_args.port = raw_input()
+                    self.self_args.port = input()
                 elif choice == 4:
                     self.menu_print("Please enter the IP address or name of the domain you wish to connect to:", 0)
-                    self.self_args.domain = raw_input()
+                    self.self_args.domain = input()
                 self.level = 3
             except ValueError:
                 self.display_wrong_choice()
         elif self.level == 5:
             if not self.self_args.username:
-                self.self_args.username = raw_input()
+                self.self_args.username = input()
             self.level = 6
         elif self.level == 6:
             if not self.self_args.password:
@@ -264,7 +264,7 @@ class Menu:
                     self.self_args.password = getpass.getpass("Please enter your password:\n")
                 else:
                     print("Attention! Your password will be shown on the screen!", file=sys.stderr)
-                    self.self_args.password = raw_input("Please enter your password:\n")
+                    self.self_args.password = input("Please enter your password:\n")
             return
         self.build()
 

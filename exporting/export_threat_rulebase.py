@@ -1,4 +1,4 @@
-from export_objects import get_objects, \
+from exporting.export_objects import get_objects, \
     get_query_rulebase_data, format_and_merge_data, merge_data, \
     clean_objects, singular_to_plural_dictionary, format_and_merge_unexportable_objects, \
     replace_rule_field_uids_by_name, cleanse_object_dictionary, format_and_merge_exception_groups, \
