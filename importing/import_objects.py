@@ -416,8 +416,8 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
             error_msg = api_reply.error_message
         log_err_msg = ""
         try:
-            log_err_msg = "Failed to import {0}{1}. Error: {2}".format(api_type, " with name [" + payload[
-                "name"].encode('utf-8').strip() + "]" if "name" in payload else "", error_msg)
+            log_err_msg = "Failed to import {0}{1}. Error: {2}".format(api_type, " with name [" + str(payload[
+                "name"]).strip() + "]" if "name" in payload else "", error_msg)
         except UnicodeEncodeError:
             log_err_msg = "Failed to import {0} object. Error: {1}".format(api_type, error_msg)
 

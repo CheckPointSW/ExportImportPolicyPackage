@@ -136,7 +136,6 @@ def print_safe(string, file_to_write):
         print(string.encode('utf-8'), file=file_to_write)
 
 
-
 # Helper function. Compares two strings of version numbers -> "1.2.1" > "1.1", "0.9.0" == "0.9"
 #
 # Arguments:
