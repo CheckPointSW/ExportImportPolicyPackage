@@ -74,6 +74,8 @@ def populate_parser(parser):
                         help="Force run the command with no confirmation. WARNING! - this will set unsafe-auto-accept to be true as well.")
     parser.add_argument("--strict", required=False, default=False, type=str2bool,
                         help="Stop import on first API error.")
+    parser.add_argument("--skip-import-sections", required=False, default=False, type=str2bool,
+                        help="Skip import layer sections.")
     return parser.parse_args()
 
 
