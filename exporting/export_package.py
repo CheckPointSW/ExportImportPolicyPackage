@@ -89,23 +89,23 @@ def export_package(client, args):
                 tar_file.add(layer_tar_name)
                 os.remove(layer_tar_name)
     if https:
-		if "https-inspection-policy" in show_package.data:
-			if show_package.data["https-inspection-policy"]:
-				debug_log("Exporting HTTPS layers", True)
-				https_layers = [show_package.data["https-inspection-layer"]]
-				for https_layer in https_layers:
-					https_data_dict, https_unexportable_objects \
-						= export_https_rulebase(show_package.data["name"], https_layer["name"], https_layer["uid"], client)
-					if not https_data_dict:
-						continue
-					layer_tar_name = \
-						create_tar_file(https_layer, https_data_dict,
-										timestamp, ["https-rule", "https-section"],
-										client.api_version)
-					merge_data(data_dict, https_data_dict)
-					merge_data(unexportable_objects, https_unexportable_objects)
-					tar_file.add(layer_tar_name)
-					os.remove(layer_tar_name)
+        if "https-inspection-policy" in show_package.data:
+            if show_package.data["https-inspection-policy"]:
+                debug_log("Exporting HTTPS layers", True)
+                https_layers = [show_package.data["https-inspection-layer"]]
+                for https_layer in https_layers:
+                    https_data_dict, https_unexportable_objects \
+                        = export_https_rulebase(show_package.data["name"], https_layer["name"], https_layer["uid"], client)
+                    if not https_data_dict:
+                        continue
+                    layer_tar_name = \
+                        create_tar_file(https_layer, https_data_dict,
+                                        timestamp, ["https-rule", "https-section"],
+                                        client.api_version)
+                    merge_data(data_dict, https_data_dict)
+                    merge_data(unexportable_objects, https_unexportable_objects)
+                    tar_file.add(layer_tar_name)
+                    os.remove(layer_tar_name)
 
     for obj_type in data_dict:
         if obj_type not in singular_to_plural_dictionary[client.api_version]:
