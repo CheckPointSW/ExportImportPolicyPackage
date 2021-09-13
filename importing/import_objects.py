@@ -119,8 +119,8 @@ def import_objects(file_name, client, changed_layer_names, package, layer=None, 
             generic_type = api_call.split("-")[3]
             api_call = "-".join(api_call.split("-")[0:3])
         api_type = generic_type if generic_type else '-'.join(api_call.split('-')[1:])
-		if args.skip_import_sections and "section" in api_type:
-			debug_log("Skip import {0}".format(api_type), True)
+        if args.skip_import_sections and "section" in api_type:
+            debug_log("Skip import {0}".format(api_type), True)
             continue
         if api_type == "access-rule" or api_type == "https-rule":
             position_decrements_for_sections = []
