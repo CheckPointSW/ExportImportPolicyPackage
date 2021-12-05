@@ -210,7 +210,7 @@ def import_objects(file_name, client, changed_layer_names, package, layer=None, 
 
 def add_tag_to_object(tag_name, payload, api_type, client):
     # types don't support tagging
-    if "rule" in api_type or "section" in api_type:
+    if "rule" in api_type or "section" in api_type or "threat-exception" in api_type:
         return
 
     global add_tag_to_object_uid
