@@ -674,7 +674,7 @@ no_export_fields_and_subfields = ["read-only", "layer", "package", "owner", "ico
 no_export_fields_by_api_type = {
     "host": ["standard-port-number", "subnet-mask", "type"],
     "network": ["subnet-mask"],
-    "threat-rule": ["exceptions"],
+    "threat-rule": ["exceptions", "exceptions-layer"],
     "simple-gateway": ["forward-logs-to-log-server-schedule-name", "hardware", "dynamic-ip", "sic-name", "sic-state",
                        "send-alerts-to-server",
                        "send-logs-to-backup-server", "send-logs-to-server", "interfaces"],
