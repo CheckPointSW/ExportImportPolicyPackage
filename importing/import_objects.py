@@ -5,8 +5,10 @@ import sys
 import copy
 from functools import cmp_to_key
 
-from lists_and_dictionaries import (singular_to_plural_dictionary, generic_objects_for_rule_fields, import_priority, https_blades_names_map,
- commands_support_batch, rule_support_batch, not_unique_name_with_dedicated_api)
+from lists_and_dictionaries import (singular_to_plural_dictionary, generic_objects_for_rule_fields, import_priority,
+                                    https_blades_names_map,
+                                    commands_support_batch, rule_support_batch, not_unique_name_with_dedicated_api,
+                                    types_not_support_tagging)
 from utils import debug_log, create_payload, compare_versions, generate_new_dummy_ip_address
 
 duplicates_dict = {}
@@ -210,8 +212,9 @@ def import_objects(file_name, client, changed_layer_names, package, layer=None, 
 
 def add_tag_to_object(tag_name, payload, api_type, client):
     # types don't support tagging
-    if "rule" in api_type or "section" in api_type or "threat-exception" in api_type:
-        return
+    for obj_type in types_not_support_tagging:
+        if obj_type in api_type:
+            return
 
     global add_tag_to_object_uid
     if add_tag_to_object_uid is None:
@@ -228,13 +231,9 @@ def add_tag_to_object(tag_name, payload, api_type, client):
                         add_tag_to_object_uid = add_tag.data['uid']
             # More than one tag exists
             elif "not unique" in show_tag.error_message:
-                query_tags = client.api_call("show-tags", {"filter": tag_name})
-                if query_tags.success:
-                    if len(query_tags.data['objects']) > 0:
-                        for tag in query_tags.data['objects']:
-                            if tag['name'] == tag_name:
-                                add_tag_to_object_uid = tag['uid']
-                                break
+                tag_data = find_tag_by_name(tag_name, client)
+                if tag_data is not None:
+                    add_tag_to_object_uid = tag_data['uid']
             else:
                 debug_log("Failed to add tag [{}] to objects. [{}]".format(tag_name,
                                                                            show_tag.error_message), True, True)
@@ -244,6 +243,19 @@ def add_tag_to_object(tag_name, payload, api_type, client):
         payload_tags = payload["tags"] if "tags" in payload else []
         payload_tags.append(add_tag_to_object_uid)
         payload["tags"] = payload_tags
+
+
+def find_tag_by_name(tag_name, client):
+    query_tags_payload = {}
+    if compare_versions(client.api_version, "1.8") != -1:
+        query_tags_payload = {"filter": tag_name}
+    query_tags = client.api_query("show-tags", payload=query_tags_payload)
+    if query_tags.success:
+        if len(query_tags.data) > 0:
+            for tag_obj in query_tags.data:
+                if tag_obj['name'] == tag_name:
+                    return tag_obj
+    return None
 
 
 def handle_import_tags(payload, api_type, client):
@@ -269,14 +281,10 @@ def handle_import_tags(payload, api_type, client):
                 if reply.success:
                     add_tag_to_payload = True
             elif "is not unique" in reply.error_message:
-                query_tags = client.api_call("show-tags", {"filter": tag_name})
-                if query_tags.success:
-                    if len(query_tags.data['objects']) > 0:
-                        for tag_obj in query_tags.data['objects']:
-                            if tag_obj['name'] == tag_name:
-                                tag_name = tag_obj['uid']
-                                add_tag_to_payload = True
-                                break
+                tag_data = find_tag_by_name(tag_name, client)
+                if tag_data is not None:
+                    tag_name = tag_data['uid']
+                    add_tag_to_payload = True
 
             if add_tag_to_payload:
                 tags_to_import.append(tag_name)

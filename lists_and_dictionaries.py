@@ -730,3 +730,4 @@ not_unique_name_with_dedicated_api = {
     "Unknown Traffic": "show-application-site-category"
 }
 
+types_not_support_tagging = ["rule", "section", "threat-exception"]
