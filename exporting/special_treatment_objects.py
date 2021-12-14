@@ -14,5 +14,5 @@ def handle_fields(obj):
                                                   "name": obj[key][index]["values"][sub_index]["name"]})
         for key in old_keys:
             obj.pop(key)
-        for new_key, new_item in new_items.iteritems():
+        for new_key, new_item in new_items.items():
             obj[new_key] = new_item
