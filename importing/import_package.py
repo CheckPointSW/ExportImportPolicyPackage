@@ -3,7 +3,7 @@ import time
 
 import sys
 
-from importing.import_objects import import_objects, add_tag_to_object
+from importing.import_objects import import_objects, add_tag_to_object_payload
 from utils import debug_log, generate_import_error_report, count_global_layers
 
 
@@ -33,7 +33,7 @@ def import_package(client, args):
         debug_log("Creating a Policy Package named [" + package + "]", True)
         package_payload = {"name": package, "access": True, "threat-prevention": True}
         if args.tag_objects_on_import != "":
-            add_tag_to_object(args.tag_objects_on_import, package_payload, "package", client)
+            add_tag_to_object_payload(args.tag_objects_on_import, package_payload, "package", client)
         client.api_call("add-package", package_payload)
         client.api_call("publish", wait_for_task=True)
     else:
