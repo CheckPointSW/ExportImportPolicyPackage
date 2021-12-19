@@ -5,8 +5,10 @@ import sys
 import copy
 from functools import cmp_to_key
 
-from lists_and_dictionaries import (singular_to_plural_dictionary, generic_objects_for_rule_fields, import_priority, https_blades_names_map,
- commands_support_batch, rule_support_batch, not_unique_name_with_dedicated_api)
+from lists_and_dictionaries import (singular_to_plural_dictionary, generic_objects_for_rule_fields, import_priority,
+                                    https_blades_names_map,
+                                    commands_support_batch, rule_support_batch, not_unique_name_with_dedicated_api,
+                                    types_not_support_tagging)
 from utils import debug_log, create_payload, compare_versions, generate_new_dummy_ip_address
 
 duplicates_dict = {}
@@ -21,6 +23,7 @@ changed_object_names_map = {}
 commands_batch_version = "1.6"
 rules_batch_version = "1.9"
 api_current_version = None
+add_tag_to_object_uid = None
 
 
 def clone_globals_batch_rulebase():
@@ -86,6 +89,8 @@ def import_objects(file_name, client, changed_layer_names, package, layer=None, 
             api_current_version = api_versions.data["current-version"]
     with open(version_file_name.name, 'rb') as version_file:
         version = version_file.readline()
+        if isinstance(version, bytes):
+            version = version.decode("utf-8")
         api_versions = client.api_call("show-api-versions")
         if not api_versions.success:
             debug_log("Error getting versions! Aborting import. " + str(api_versions), True, True)
@@ -203,6 +208,81 @@ def import_objects(file_name, client, changed_layer_names, package, layer=None, 
         os.remove(rulebase_object_file.name)
 
     return layers_to_attach
+
+
+def add_tag_to_object_payload(tag_name, payload, api_type, client):
+    # types don't support tagging
+    for type_not_support_tagging in types_not_support_tagging:
+        if type_not_support_tagging in api_type:  # can be sub-string of api_type (e.g. rule)
+            return
+
+    global add_tag_to_object_uid
+    if add_tag_to_object_uid is None:
+        tag_data = find_tag_by_name(tag_name, client)
+        if tag_data is not None:
+            add_tag_to_object_uid = tag_data['uid']
+        else:
+            # Tag not exists
+            add_tag = client.api_call("add-tag", {"name": tag_name})
+            if add_tag.success:
+                publish = client.api_call("publish", {})
+                if publish.success:
+                    add_tag_to_object_uid = add_tag.data['uid']
+            else:
+                debug_log("Failed to add tag [{}] to objects. [{}]".format(tag_name,
+                                                                           add_tag.error_message), True, True)
+    # Add tag to payload
+    if add_tag_to_object_uid is not None:
+        payload_tags = payload["tags"] if "tags" in payload else []
+        payload_tags.append(add_tag_to_object_uid)
+        payload["tags"] = payload_tags
+
+
+def find_tag_by_name(tag_name, client):
+    query_tags = client.api_call("show-objects", payload={"type": "tag", "filter": tag_name})
+    if query_tags.success:
+        if len(query_tags.data['objects']) > 0:
+            for tag_obj in query_tags.data['objects']:
+                if tag_obj['name'] == tag_name:
+                    return tag_obj
+    return None
+
+
+def handle_import_tags(payload, api_type, client):
+    exported_tags = payload["tags"]
+    tags_to_import = []
+    unresolved_tags = []
+    for tag in exported_tags:
+        tag_name = None
+        if isinstance(tag, dict):
+            if "name" in tag:
+                tag_name = str(tag["name"])
+
+        if tag_name is None or tag_name == "":
+            debug_log("Unknown tag name for object [{0}]".format(payload["name"] if "name" in payload else api_type),
+                      True, True)
+        else:
+            add_tag_to_payload = False
+            tag_data = find_tag_by_name(tag_name, client)
+            if tag_data is not None:
+                tag_name = tag_data['uid']
+                add_tag_to_payload = True
+            else:
+                # Tag not exists
+                reply = client.api_call("add-tag", tag)
+                if reply.success:
+                    add_tag_to_payload = True
+
+            if add_tag_to_payload:
+                tags_to_import.append(tag_name)
+            else:
+                unresolved_tags.append(tag_name)
+
+    if len(unresolved_tags) > 0:
+        debug_log("Failed to add tags {0} for object [{1}]".format(unresolved_tags, payload["name"]), True, True)
+
+    if len(tags_to_import) > 0:
+        payload["tags"] = tags_to_import
 
 
 def add_object(line, counter, position_decrement_due_to_rule, position_decrement_due_to_section, fields, api_type,
@@ -359,37 +439,10 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
                 payload["blade"] = blades_to_import
 
     if "tags" in payload:
-        exported_tags = payload["tags"]
-        tags_to_import = []
-        unresolved_tags = []
-        for tag in exported_tags:
-            tag_name = None
-            if isinstance(tag, dict):
-                if "name" in tag:
-                    tag_name = str(tag["name"])
+        handle_import_tags(payload, api_type, client)
 
-            if tag_name is None or tag_name == "":
-                debug_log("Unknown tag name for object [{0}]".format(payload["name"]), True, True)
-            else:
-                add_tag_to_payload = False
-                reply = client.api_call("show-tag", {"name": tag_name})
-                if reply.success:
-                    add_tag_to_payload = True
-                elif "generic_err_object_not_found" in reply.data["code"]:
-                    reply = client.api_call("add-tag", tag)
-                    if reply.success:
-                        add_tag_to_payload = True
-
-                if add_tag_to_payload:
-                    tags_to_import.append(tag_name)
-                else:
-                    unresolved_tags.append(tag_name)
-
-        if len(unresolved_tags) > 0:
-            debug_log("Failed to add tags {0} for object [{1}]".format(unresolved_tags, payload["name"]), True, True)
-
-        if len(tags_to_import) > 0:
-            payload["tags"] = tags_to_import
+    if args is not None and args.tag_objects_on_import != "":
+        add_tag_to_object_payload(args.tag_objects_on_import, payload, api_type, client)
 
     api_reply = client.api_call(api_call, payload)
 
@@ -594,37 +647,10 @@ def update_payload_batch(client, payload, api_type, args, is_rule_type, changed_
                     payload[field][i] = name_collision_map[member]
 
     if "tags" in payload:
-        exported_tags = payload["tags"]
-        tags_to_import = []
-        unresolved_tags = []
-        for tag in exported_tags:
-            tag_name = None
-            if isinstance(tag, dict):
-                if "name" in tag:
-                    tag_name = str(tag["name"])
+        handle_import_tags(payload, api_type, client)
 
-            if tag_name is None or tag_name == "":
-                debug_log("Unknown tag name for object [{0}]".format(payload["name"]), True, True)
-            else:
-                add_tag_to_payload = False
-                reply = client.api_call("show-tag", {"name": tag_name})
-                if reply.success:
-                    add_tag_to_payload = True
-                elif "generic_err_object_not_found" in reply.data["code"]:
-                    reply = client.api_call("add-tag", tag)
-                    if reply.success:
-                        add_tag_to_payload = True
-
-                if add_tag_to_payload:
-                    tags_to_import.append(tag_name)
-                else:
-                    unresolved_tags.append(tag_name)
-
-        if len(unresolved_tags) > 0:
-            debug_log("Failed to add tags {0} for object [{1}]".format(unresolved_tags, payload["name"]), True, True)
-
-        if len(tags_to_import) > 0:
-            payload["tags"] = tags_to_import
+    if args is not None and args.tag_objects_on_import != "":
+        add_tag_to_object_payload(args.tag_objects_on_import, payload, api_type, client)
 
     if is_rule_type:
         global should_create_imported_nat_top_section
