@@ -213,33 +213,24 @@ def import_objects(file_name, client, changed_layer_names, package, layer=None, 
 def add_tag_to_object_payload(tag_name, payload, api_type, client):
     # types don't support tagging
     for type_not_support_tagging in types_not_support_tagging:
-        if type_not_support_tagging in api_type:  # can be sub-string of api_type
+        if type_not_support_tagging in api_type:  # can be sub-string of api_type (e.g. rule)
             return
 
     global add_tag_to_object_uid
     if add_tag_to_object_uid is None:
-        show_tag = client.api_call("show-tag", {"name": tag_name})
-        if show_tag.success:
-            add_tag_to_object_uid = show_tag.data['uid']
+        tag_data = find_tag_by_name(tag_name, client)
+        if tag_data is not None:
+            add_tag_to_object_uid = tag_data['uid']
         else:
-            # Tag not found
-            if "not found" in show_tag.error_message:
-                add_tag = client.api_call("add-tag", {"name": tag_name})
-                if add_tag.success:
-                    publish = client.api_call("publish", {})
-                    if publish.success:
-                        add_tag_to_object_uid = add_tag.data['uid']
-                else:
-                    debug_log("Failed to add tag [{}] to objects. [{}]".format(tag_name,
-                                                                               add_tag.error_message), True, True)
-            # More than one tag exists
-            elif "not unique" in show_tag.error_message:
-                tag_data = find_tag_by_name(tag_name, client)
-                if tag_data is not None:
-                    add_tag_to_object_uid = tag_data['uid']
+            # Tag not exists
+            add_tag = client.api_call("add-tag", {"name": tag_name})
+            if add_tag.success:
+                publish = client.api_call("publish", {})
+                if publish.success:
+                    add_tag_to_object_uid = add_tag.data['uid']
             else:
-                debug_log("Could not add tag [{}]. Message: [{}]".format(tag_name, show_tag.error_message), True, True)
-
+                debug_log("Failed to add tag [{}] to objects. [{}]".format(tag_name,
+                                                                           add_tag.error_message), True, True)
     # Add tag to payload
     if add_tag_to_object_uid is not None:
         payload_tags = payload["tags"] if "tags" in payload else []
@@ -272,17 +263,14 @@ def handle_import_tags(payload, api_type, client):
                       True, True)
         else:
             add_tag_to_payload = False
-            reply = client.api_call("show-tag", {"name": tag_name})
-            if reply.success:
+            tag_data = find_tag_by_name(tag_name, client)
+            if tag_data is not None:
+                tag_name = tag_data['uid']
                 add_tag_to_payload = True
-            elif "generic_err_object_not_found" in reply.data["code"]:
+            else:
+                # Tag not exists
                 reply = client.api_call("add-tag", tag)
                 if reply.success:
-                    add_tag_to_payload = True
-            elif "is not unique" in reply.error_message:
-                tag_data = find_tag_by_name(tag_name, client)
-                if tag_data is not None:
-                    tag_name = tag_data['uid']
                     add_tag_to_payload = True
 
             if add_tag_to_payload:
