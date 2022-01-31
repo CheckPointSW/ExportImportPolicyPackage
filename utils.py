@@ -163,6 +163,12 @@ def compare_versions(version1, version2):
     return -1 if (len(v1_nums) < len(v2_nums)) else 1 if (len(v1_nums) > len(v2_nums)) else 0
 
 
+def get_min_version(version1, version2):
+    if compare_versions(version1, version2) < 0:
+        return version1
+    return version2
+
+
 def get_special_treatment_list():
     _, pathname, description = imp.find_module("exporting.special_treatment_objects")
     return set([os.path.splitext(module)[0]

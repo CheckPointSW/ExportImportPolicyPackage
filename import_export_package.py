@@ -5,7 +5,7 @@ import argparse
 from cpapi import APIClient, APIClientArgs
 from exporting.export_package import export_package
 from importing.import_package import import_package
-from utils import process_arguments, extract_sid_from_session_file, handle_login_fail
+from utils import process_arguments, extract_sid_from_session_file, handle_login_fail, get_min_version, debug_log
 
 debug = None
 log_file = None
@@ -22,12 +22,12 @@ def get_version(client):
 
 if __name__ == "__main__":
 
-    arg_parser = argparse.ArgumentParser(description="R80.X Policy Package Export/Import Tool, V5.0")
+    arg_parser = argparse.ArgumentParser(description="R80.X Policy Package Export/Import Tool, V5.1")
     args = process_arguments(arg_parser)
     if args.force:
         args.unsafe_auto_accept = True
     args_for_client = APIClientArgs(server=args.management, port=args.port,
-                                    sid=args.session_id, debug_file=log_file, api_version=args.version,
+                                    sid=args.session_id, debug_file=log_file,
                                     proxy_host=args.proxy, proxy_port=args.proxy_port, unsafe=args.unsafe,
                                     unsafe_auto_accept=args.unsafe_auto_accept)
 
@@ -56,7 +56,11 @@ if __name__ == "__main__":
             test_reply = client.api_call("show-hosts", {"limit": 1})
             handle_login_fail(not test_reply.success, "Supplied SID is invalid!")
             get_version(client)
-            
+        if args.version:
+            min_version = get_min_version(client.api_version, args.version)
+            debug_log("Machine API version: " + client.api_version + ", given API version: " + args.version +
+                      ", setting API version to: " + min_version, True, True)
+            client.api_version = min_version
         if args.operation == "export":
             export_package(client, args)
         else:
