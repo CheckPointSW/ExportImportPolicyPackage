@@ -76,6 +76,8 @@ def populate_parser(parser):
                         help="Stop import on first API error.")
     parser.add_argument("--skip-import-sections", required=False, default=False, type=str2bool,
                         help="Skip import layer sections.")
+    parser.add_argument("--tag-objects-on-import", required=False, default="",
+                        help="Add tag to supported objects on import.")
     parser.add_argument("--skip-duplicate-objects", required=False, default=False, type=str2bool,
                         help="Skip importing an object if an object with the same name already exists.")
     return parser.parse_args()
