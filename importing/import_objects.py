@@ -447,22 +447,26 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
     api_reply = client.api_call(api_call, payload)
 
     if not api_reply.success and "name" in payload and "More than one object" in api_reply.error_message:
-        i = 0
-        original_name = payload["name"]
-        while not api_reply.success:
-            payload["name"] = "NAME_COLLISION_RESOLVED" + ("_" if i == 0 else "_%s_" % i) + original_name
-            api_reply = client.api_call(api_call, payload)
-            i += 1
+        if args is not None and not args.skip_duplicate_objects:
+            i = 0
+            original_name = payload["name"]
+            while not api_reply.success:
+                payload["name"] = "NAME_COLLISION_RESOLVED" + ("_" if i == 0 else "_%s_" % i) + original_name
+                api_reply = client.api_call(api_call, payload)
+                i += 1
 
-            if i > 100:
-                payload["name"] = original_name
-                break
+                if i > 100:
+                    payload["name"] = original_name
+                    break
 
-        if api_reply.success:
-            debug_log("Object \"%s\" was renamed to \"%s\" to resolve the name collision"
-                      % (original_name, payload["name"]), True, True)
-            name_collision_map[original_name] = payload["name"]
-
+            if api_reply.success:
+                debug_log("Object \"%s\" was renamed to \"%s\" to resolve the name collision"
+                          % (original_name, payload["name"]), True, True)
+                name_collision_map[original_name] = payload["name"]
+        else:
+            api_reply.success = True;
+            debug_log("skip duplicate object [{0}]".format(payload["name"]), True, True)
+         
     if not api_reply.success:
         if api_reply.data and "errors" in api_reply.data:
             error_msg = api_reply.data["errors"][0]["message"]

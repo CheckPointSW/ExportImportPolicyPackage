@@ -78,6 +78,8 @@ def populate_parser(parser):
                         help="Skip import layer sections.")
     parser.add_argument("--tag-objects-on-import", required=False, default="",
                         help="Add tag to supported objects on import.")
+    parser.add_argument("--skip-duplicate-objects", required=False, default=False, type=str2bool,
+                        help="Skip importing an object if an object with the same name already exists.")
     return parser.parse_args()
 
 
@@ -161,6 +163,12 @@ def compare_versions(version1, version2):
             return 1
         i += 1
     return -1 if (len(v1_nums) < len(v2_nums)) else 1 if (len(v1_nums) > len(v2_nums)) else 0
+
+
+def get_min_version(version1, version2):
+    if compare_versions(version1, version2) < 0:
+        return version1
+    return version2
 
 
 def get_special_treatment_list():
