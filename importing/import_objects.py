@@ -410,7 +410,7 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
             if updatable_objects_repository_reply.success:
                 updatable_objects_repository_initliazed = True
             else:
-                debug_log("Failed to update updatable objects repository \"%s\"" % updatable_objects_repository_reply.error_message, True, True)
+                debug_log("Failed to update updatable objects repository", True, True)
         updatable_object_payload = {}
         if "uid-in-updatable-objects-repository" in payload:
             updatable_object_payload["uid-in-updatable-objects-repository"] = payload[
