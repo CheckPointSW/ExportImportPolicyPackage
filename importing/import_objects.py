@@ -410,7 +410,7 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
             if updatable_objects_repository_reply.success:
                 updatable_objects_repository_initliazed = True
             else:
-                debug_log("Failed to update updatable objects repository \"%s\"" % updatable_objects_repository_reply.error_message, True, True)
+                debug_log("Failed to update updatable objects repository", True, True)
         updatable_object_payload = {}
         if "uid-in-updatable-objects-repository" in payload:
             updatable_object_payload["uid-in-updatable-objects-repository"] = payload[
@@ -437,6 +437,8 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
                     else:
                         blades_to_import.append(blade)
                 payload["blade"] = blades_to_import
+    elif "service" in api_type:
+        handle_service_default_timeout(payload)
 
     if "tags" in payload:
         handle_import_tags(payload, api_type, client)
@@ -638,6 +640,13 @@ def create_batch_payload(api_type, data, fields, client, args, is_rule_type, cha
     return batch_payload
 
 
+def handle_service_default_timeout(payload):
+    if "aggressive-aging" in payload:
+        if "use-default-timeout" in payload["aggressive-aging"] and payload["aggressive-aging"]["use-default-timeout"]:
+            if "timeout" in payload["aggressive-aging"]:
+                del payload["aggressive-aging"]["timeout"]
+
+
 def update_payload_batch(client, payload, api_type, args, is_rule_type, changed_layer_names, package, generic_type,
                          layer, layers_to_attach):
     if args is not None and args.objects_suffix != "":
@@ -655,6 +664,9 @@ def update_payload_batch(client, payload, api_type, args, is_rule_type, changed_
 
     if args is not None and args.tag_objects_on_import != "":
         add_tag_to_object_payload(args.tag_objects_on_import, payload, api_type, client)
+
+    if "service" in api_type:
+        handle_service_default_timeout(payload)
 
     if is_rule_type:
         global should_create_imported_nat_top_section

@@ -713,7 +713,8 @@ https_blades_names_map = {
     "Anti-Virus": "Anti Virus",
     "Anti-Bot": "Anti Bot",
     "URL Filtering": "Url Filtering",
-    "Data Loss Prevention": "DLP"
+    "Data Loss Prevention": "DLP",
+    "Content Awareness": "Data Awareness"
 }
 
 commands_support_batch = ['access-role', 'address-range', 'application-site-category',
