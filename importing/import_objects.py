@@ -311,6 +311,29 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
 
     payload["ignore-warnings"] = True  # Useful for example when creating two hosts with the same IP
 
+    if "threat-profile" in api_type:
+        if "scan-malicious-links" in payload:
+            payload.pop("scan-malicious-links")
+            debug_log("Not importing scan-malicious-links, value is not supported. Setting with default value", True, True)
+
+    if "exception-group" in api_type:
+        i = 0
+        original_name = payload["name"]
+        api_reply = ''
+        while api_reply == '' or api_reply.success:
+            api_reply = client.api_call("show-exception-group", {"name": payload["name"]})
+            payload["name"] = "NAME_COLLISION_RESOLVED" + ("_" if i == 0 else "_%s_" % i) + original_name
+            i += 1
+
+            if i > 100:
+                payload["name"] = original_name
+                break
+
+        if not api_reply.success:
+            debug_log("Object \"%s\" was renamed to \"%s\" to resolve the name collision"
+                      % (original_name, payload["name"]), True, True)
+            name_collision_map[original_name] = payload["name"]
+
     if "nat-rule" in api_type:
         # For NAT rules, the 'package' parameter is the name of the policy package!!!
         if package is None:
@@ -371,6 +394,11 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
                 section_position_decrement = (position_decrements_for_sections[int(payload["position"]) - 1] if len(
                     position_decrements_for_sections) > 0 else 0) + position_decrement_due_to_section
                 payload["position"] = str(int(payload["position"]) - section_position_decrement)
+            if "exception" in api_type and "rule-number" in payload:
+                show_rule_rulebase = client.api_call("show-threat-rule-exception-rulebase", {"name": layer, "rule-number": payload["rule-number"]})
+                if show_rule_rulebase.success and show_rule_rulebase.data and "to" in show_rule_rulebase.data:
+                    payload["position"] = str(int(show_rule_rulebase.data["to"]) + 1)
+                    
         if generic_type:
             payload["create"] = generic_type
         if "layer" in api_type:
