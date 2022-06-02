@@ -37,11 +37,12 @@ def export_threat_exception_rulebase(package, layer, layer_uid, threat_rule, exc
             if rulebase_object["name"] == "Global Exceptions":
                 continue
             show_group_reply = client.api_call("show-exception-group", payload={"name": rulebase_object["name"]})
-            if rulebase_object["from"]:
+            if "from" in rulebase_object:
                 group_position = rulebase_object["from"]
             else:
                 group_position = to_position if to_position else "top"
-            to_position = rulebase_object["to"] if rulebase_object["to"] else to_position
+            if "to" in rulebase_object:
+                to_position = rulebase_object["to"]
             if rulebase_object["name"] not in [x["name"] for x in exception_groups]:
                 show_group_reply.data["positions"] = []
                 if show_group_reply.data["apply-on"] == "manually-select-threat-rules":

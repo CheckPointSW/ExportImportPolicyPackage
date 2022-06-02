@@ -86,7 +86,7 @@ def get_query_rulebase_data(client, api_type, payload):
         non_empty_rulebase_items = []
         skipped_first_empty_section = False
         for rulebase_item in rulebase_data["rulebase"]:
-            if not skipped_first_empty_section and "rule-number" not in rulebase_item and "to" not in rulebase_item:
+            if not skipped_first_empty_section and "rule-number" not in rulebase_item and "to" not in rulebase_item and rulebase_item["type"] != "threat-section":
                 continue
             else:
                 skipped_first_empty_section = True
