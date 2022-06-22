@@ -86,7 +86,7 @@ def get_query_rulebase_data(client, api_type, payload):
         non_empty_rulebase_items = []
         skipped_first_empty_section = False
         for rulebase_item in rulebase_data["rulebase"]:
-            if not skipped_first_empty_section and "rule-number" not in rulebase_item and "to" not in rulebase_item:
+            if not skipped_first_empty_section and "rule-number" not in rulebase_item and "to" not in rulebase_item and rulebase_item["type"] != "threat-section":
                 continue
             else:
                 skipped_first_empty_section = True
@@ -332,7 +332,7 @@ def export_general_objects(data_dict, api_type, object_dictionary, unexportable_
 # tag_info_client - to handle objects with 'tags' field as list of uids
 def format_and_merge_data(data_dict, objects, tag_info_client=None):
     global exported_objects
-    unexported_objects = [x for x in objects if x["uid"] not in exported_objects]
+    unexported_objects = [x for x in objects if x["uid"] not in exported_objects or x["type"] == "exception-group"]
     exported_objects.extend([x["uid"] for x in unexported_objects])
     if tag_info_client:
         formatted_data = format_objects(unexported_objects, tag_info_client)
@@ -491,6 +491,8 @@ def clean_objects(data_dict):
                 if field == "track.type":
                     # This field is required and must be retained since it defines whether tracking is enabled!
                     local_no_export_fields_and_subfields.remove("type")
+                if api_type == "exception-group":
+                    local_no_export_fields_and_subfields.remove("layer")
                 if any(x for x in sub_fields if x in local_no_export_fields_and_subfields) or (
                             sub_fields[0] in no_export_fields) or (api_type in no_export_fields_by_api_type and any(
                     x for x in sub_fields if x in no_export_fields_by_api_type[api_type])):

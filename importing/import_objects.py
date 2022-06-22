@@ -21,9 +21,10 @@ imported_nat_top_section_uid = None
 name_collision_map = {}
 changed_object_names_map = {}
 commands_batch_version = "1.6"
-rules_batch_version = "1.9"
+rules_batch_version = "1.8.1"
 api_current_version = None
 add_tag_to_object_uid = None
+imported_exception_groups = []
 
 
 def clone_globals_batch_rulebase():
@@ -311,6 +312,36 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
 
     payload["ignore-warnings"] = True  # Useful for example when creating two hosts with the same IP
 
+    if "threat-profile" in api_type:
+        if "scan-malicious-links" in payload:
+            payload.pop("scan-malicious-links")
+            debug_log("Not importing scan-malicious-links, value is not supported. Setting with default value", True, True)
+
+    if "exception-group" in api_type:
+        name_to_check = payload["name"] if payload["name"] not in name_collision_map else name_collision_map[payload["name"]]
+        if name_to_check not in imported_exception_groups:
+            i = 0
+            original_name = payload["name"]
+            api_reply = client.api_call("show-exception-group", {"name": payload["name"]})
+            was_renamed = False
+            while api_reply.success and args is not None and not args.skip_duplicate_objects:
+                was_renamed = True
+                payload["name"] = "NAME_COLLISION_RESOLVED" + ("_" if i == 0 else "_%s_" % i) + original_name
+                api_reply = client.api_call("show-exception-group", {"name": payload["name"]})
+                i += 1
+
+                if i > 100:
+                    payload["name"] = original_name
+                    was_renamed = False
+                    break
+
+            if api_reply.success and args is not None and args.skip_duplicate_objects:
+                debug_log("skip duplicate object [{0}]".format(payload["name"]), True, True)
+            elif not api_reply.success and was_renamed is True:
+                debug_log("Object \"%s\" was renamed to \"%s\" to resolve the name collision"
+                          % (original_name, payload["name"]), True, True)
+                name_collision_map[original_name] = payload["name"]
+
     if "nat-rule" in api_type:
         # For NAT rules, the 'package' parameter is the name of the policy package!!!
         if package is None:
@@ -371,6 +402,11 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
                 section_position_decrement = (position_decrements_for_sections[int(payload["position"]) - 1] if len(
                     position_decrements_for_sections) > 0 else 0) + position_decrement_due_to_section
                 payload["position"] = str(int(payload["position"]) - section_position_decrement)
+            if "exception" in api_type and "rule-number" in payload:
+                show_rule_rulebase = client.api_call("show-threat-rule-exception-rulebase", {"name": layer, "rule-number": payload["rule-number"]})
+                if show_rule_rulebase.success and show_rule_rulebase.data and "to" in show_rule_rulebase.data:
+                    payload["position"] = str(int(show_rule_rulebase.data["to"]) + 1)
+                    
         if generic_type:
             payload["create"] = generic_type
         if "layer" in api_type:
@@ -402,6 +438,9 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
             for applied_rule in payload["applied-threat-rules"]:
                 if applied_rule["layer"] in changed_layer_names.keys():
                     applied_rule["layer"] = changed_layer_names[applied_rule["layer"]]
+        elif api_type == "threat-exception" and "exception-group-name" in payload:
+            if payload["exception-group-name"] in name_collision_map:
+                payload["exception-group-name"] = name_collision_map[payload["exception-group-name"]]
 
     if "updatable-object" in api_type:
         global updatable_objects_repository_initliazed
@@ -446,6 +485,17 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
     if args is not None and args.tag_objects_on_import != "":
         add_tag_to_object_payload(args.tag_objects_on_import, payload, api_type, client)
 
+    if api_type == "exception-group":
+        api_reply = client.api_call("show-exception-group", {"name": payload["name"]})
+        if api_reply.success:
+            api_call = "set-exception-group"
+            if payload["name"] in name_collision_map:
+                payload["name"] = name_collision_map[payload["name"]]
+            if "applied-threat-rules" in payload:
+                add_rules = payload["applied-threat-rules"].copy()
+                applied_threat_rules = {"add": add_rules}
+                payload["applied-threat-rules"] = applied_threat_rules
+
     api_reply = client.api_call(api_call, payload)
 
     if not api_reply.success and "name" in payload and "More than one object" in api_reply.error_message:
@@ -466,7 +516,7 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
                           % (original_name, payload["name"]), True, True)
                 name_collision_map[original_name] = payload["name"]
         else:
-            api_reply.success = True;
+            api_reply.success = True
             debug_log("skip duplicate object [{0}]".format(payload["name"]), True, True)
          
     if not api_reply.success:
@@ -579,6 +629,8 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
             exit(1)
     else:
         imported_name = payload["name"] if "name" in payload else ""
+        if api_call == "add-exception-group":
+            imported_exception_groups.append(imported_name)
         debug_log("Imported {0}{1}".format(api_type, " with name [" + imported_name + "]"))
         if counter % 20 == 0 or counter == num_objects:
             percentage = int(float(counter) / float(num_objects) * 100)
