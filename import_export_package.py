@@ -29,7 +29,7 @@ if __name__ == "__main__":
     args_for_client = APIClientArgs(server=args.management, port=args.port,
                                     sid=args.session_id, debug_file=log_file,
                                     proxy_host=args.proxy, proxy_port=args.proxy_port, unsafe=args.unsafe,
-                                    unsafe_auto_accept=args.unsafe_auto_accept)
+                                    unsafe_auto_accept=args.unsafe_auto_accept, cloud_mgmt_id=args.cloud_mgmt_id)
 
     with APIClient(args_for_client) as client:
         payload = {}
