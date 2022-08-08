@@ -386,8 +386,9 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
             payload["position"] = "bottom"
     else:
         if "position" in payload:
-            if "rule" in api_type:
+            if "rule" in api_type or api_type == "threat-exception":
                 payload["position"] = str(int(payload["position"]) - position_decrement_due_to_rule)
+            if "rule" in api_type:
                 if payload["action"] == "Drop":
                     if "action-settings" in payload:
                         payload.pop("action-settings")
@@ -402,11 +403,7 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
                 section_position_decrement = (position_decrements_for_sections[int(payload["position"]) - 1] if len(
                     position_decrements_for_sections) > 0 else 0) + position_decrement_due_to_section
                 payload["position"] = str(int(payload["position"]) - section_position_decrement)
-            if "exception" in api_type and "rule-number" in payload:
-                show_rule_rulebase = client.api_call("show-threat-rule-exception-rulebase", {"name": layer, "rule-number": payload["rule-number"]})
-                if show_rule_rulebase.success and show_rule_rulebase.data and "to" in show_rule_rulebase.data:
-                    payload["position"] = str(int(show_rule_rulebase.data["to"]) + 1)
-                    
+
         if generic_type:
             payload["create"] = generic_type
         if "layer" in api_type:
@@ -430,6 +427,8 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
             payload["layer"] = layer
             if args is not None and args.objects_suffix != "":
                 payload["layer"] += args.objects_suffix
+                if payload["layer"] in changed_layer_names:
+                    payload["layer"] = changed_layer_names[payload["layer"]]
             if client.api_version != "1" and api_type == "access-rule" and "track-alert" in payload:
                 payload["track"] = {}
                 payload["track"]["alert"] = payload["track-alert"]
@@ -578,8 +577,8 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
                                           position_decrement_due_to_section, fields, api_type, generic_type, layer,
                                           layers_to_attach,
                                           changed_layer_names, api_call, num_objects, client, args, package)
-        if "Invalid parameter for [position]" in api_reply.error_message:
-            if "access-rule" in api_type or "https-rule" in api_type:
+        if "Invalid parameter for [position]" in api_reply.error_message and "exception-group" not in api_type:
+            if "access-rule" in api_type or "https-rule" or "threat-exception" in api_type:
                 position_decrement_due_to_rule += adjust_position_decrement(int(payload["position"]),
                                                                             api_reply.error_message)
             elif "access-section" in api_type or "https-section" in api_type:
@@ -948,7 +947,9 @@ def add_suffix_to_objects(payload, api_type, objects_suffix):
         return
 
     fields_to_change = ["name", "source", "destination", "service", "members", "inline-layer", "networks", "host",
-                        "protected-scope", "protection-or-site", "exception-group-name", "rule-name"]
+                        "protected-scope", "protection-or-site", "exception-group-name", "rule-name", "applied-threat-rules"]
+    if api_type == "threat-exception" and "exception-group-name" in payload and "name" not in payload:
+        payload.update({"name": ""})
     for field in fields_to_change:
         if field in payload:
             if field == "name":
@@ -967,3 +968,7 @@ def add_suffix_to_objects(payload, api_type, objects_suffix):
                 for i in range(len(payload[field])):
                     if payload[field][i]["name"] in changed_object_names_map:
                         payload[field][i]["name"] = changed_object_names_map[payload[field][i]["name"]]
+            elif field == "applied-threat-rules":
+                for i in range(len(payload[field])):
+                    if payload[field][i]["layer"] in changed_object_names_map:
+                        payload[field][i]["layer"] = changed_object_names_map[payload[field][i]["layer"]]
