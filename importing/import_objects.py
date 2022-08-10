@@ -959,7 +959,7 @@ def add_suffix_to_objects(payload, api_type, objects_suffix):
                 changed_object_names_map[oldName] = newName
             elif field in ["source", "destination", "service", "members", "protected-scope", "protection-or-site"]:
                 for i in range(len(payload[field])):
-                    if payload[field][i] in changed_object_names_map:
+                    if payload[field][i] in changed_object_names_map and payload[field][i] != "IPS":
                         payload[field][i] = changed_object_names_map[payload[field][i]]
             elif field in ["inline-layer", "host", "exception-group-name", "rule-name"]:
                 if payload[field] in changed_object_names_map:
