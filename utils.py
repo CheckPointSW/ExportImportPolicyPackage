@@ -80,6 +80,7 @@ def populate_parser(parser):
                         help="Add tag to supported objects on import.")
     parser.add_argument("--skip-duplicate-objects", required=False, default=False, type=str2bool,
                         help="Skip importing an object if an object with the same name already exists.")
+    parser.add_argument("--cloud-mgmt-id", required=False, default="", help="Smart-1 Cloud management UID.")
     return parser.parse_args()
 
 

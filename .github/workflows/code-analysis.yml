@@ -1,0 +1,10 @@
+name: Code Analysis
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  code-analysis:
+    uses: CheckPointSW/org-templates/.github/workflows/code-analysis.yml@main
+    secrets: inherit

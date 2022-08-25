@@ -22,14 +22,14 @@ def get_version(client):
 
 if __name__ == "__main__":
 
-    arg_parser = argparse.ArgumentParser(description="R80.X Policy Package Export/Import Tool, V5.6")
+    arg_parser = argparse.ArgumentParser(description="R80.X Policy Package Export/Import Tool, V5.7")
     args = process_arguments(arg_parser)
     if args.force:
         args.unsafe_auto_accept = True
     args_for_client = APIClientArgs(server=args.management, port=args.port,
                                     sid=args.session_id, debug_file=log_file,
                                     proxy_host=args.proxy, proxy_port=args.proxy_port, unsafe=args.unsafe,
-                                    unsafe_auto_accept=args.unsafe_auto_accept)
+                                    unsafe_auto_accept=args.unsafe_auto_accept, cloud_mgmt_id=args.cloud_mgmt_id)
 
     with APIClient(args_for_client) as client:
         payload = {}
