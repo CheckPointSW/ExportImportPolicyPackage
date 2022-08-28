@@ -536,5 +536,17 @@ def generate_import_error_report():
             except UnicodeEncodeError:
                 exp_err_file.write(err_msg.encode('utf-8'))
 
+
 def cmp(a, b):
     return (a > b) - (a < b)
+
+
+def get_reply_err_msg(api_reply):
+    if not api_reply.success:
+        if hasattr(api_reply, "error_message"):
+            return api_reply.error_message
+        elif 'tasks' in api_reply.data and len(api_reply.data['tasks']) == 1 and 'task-details' in api_reply.data['tasks'][0] \
+                and len(api_reply.data['tasks'][0]['task-details']) == 1 and 'fault-message' \
+                in api_reply.data['tasks'][0]['task-details'][0]:  # it's a task reply
+            return api_reply.data['tasks'][0]['task-details'][0]['fault-message']
+    return ""
