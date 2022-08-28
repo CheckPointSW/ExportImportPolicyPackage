@@ -555,7 +555,7 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
         else:
             api_reply.success = True
             debug_log("skip duplicate object [{0}]".format(payload["name"]), True, True)
-         
+
     if not api_reply.success:
         if api_reply.data and "errors" in api_reply.data:
             error_msg = api_reply.data["errors"][0]["message"]
