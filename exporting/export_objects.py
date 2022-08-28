@@ -1,7 +1,8 @@
 from exporting.special_treatment_objects import handle_fields
 from lists_and_dictionaries import no_export_fields_and_subfields, \
     singular_to_plural_dictionary, group_objects_field, placeholder_type_by_obj_type, \
-    no_export_fields_by_api_type, special_treatment_types, no_export_fields
+    no_export_fields_by_api_type, special_treatment_types, \
+    fields_to_convert_from_obj_to_identifier_by_api_type, fields_to_exclude_due_to_value_of_other_fields
 from utils import debug_log, merge_data, flatten_json, find_min_position_group, compare_versions, \
     check_for_export_error, \
     generate_new_dummy_ip_address
@@ -481,8 +482,44 @@ def cleanse_object_dictionary(object_dictionary):
 def clean_objects(data_dict):
     for api_type in data_dict:
         for obj in data_dict[api_type]:
+            # currently fields_to_exclude_due_to_value_of_other_fields is relevant only for the types below. if there'll
+            # be more relevant types should change fields_to_exclude_due_to_value_of_other_fields to be by_api_type
+            if api_type == 'simple-cluster' or api_type == 'simple-gateway' or 'service' in api_type:
+                for dependent_field in fields_to_exclude_due_to_value_of_other_fields:
+                    if dependent_field in obj:
+                        # currently there's just 1 independent field; if there'll be more will need to add a 'break' if the
+                        # presence of any of the independent fields requires removal of the dependent field
+                        for independent_field in fields_to_exclude_due_to_value_of_other_fields[dependent_field].keys():
+                            if independent_field in obj and obj[independent_field] == fields_to_exclude_due_to_value_of_other_fields[dependent_field][independent_field]:
+                                obj.pop(dependent_field, None)
+                                debug_log("The field " + dependent_field + " was removed from object of type " +
+                                          api_type + " named " + obj["name"] + " since it cannot be present when the "
+                                          "value of " + independent_field + " is " + str(obj[independent_field]))
+
+            # converted_fields_to_add = {}
             for field in list(obj):
                 sub_fields = field.split(".")
+                # in cases where the request is a single value (e.g name/list of names) and the reply is the corresponding object/s, we wish to create
+                # a new field named same as the object with the identifier as its value (and delete the rest of the object's fields!)
+                if api_type in fields_to_convert_from_obj_to_identifier_by_api_type:
+                    field_removed = False
+                    for field_to_convert in fields_to_convert_from_obj_to_identifier_by_api_type[api_type]:
+                        if field.startswith(field_to_convert + "."):
+                            # check whether the field is the name of an object (might be an object in a list)
+                            # if field == field_to_convert + ".name" or \
+                            #         (field_to_convert + "." + sub_fields[-2] + ".name" == field and sub_fields[-2].isnumeric()):
+                            #     identifier = obj[field]
+                            #     converted_field = field[:-5]  # in cases of list of objects (remove .name)
+                            #     converted_fields_to_add[converted_field] = identifier
+                            obj.pop(field, None)
+                            field_removed = True
+                            debug_log("The field " + field + " was removed from object of type " + api_type + " named "
+                                      + obj["name"] + " since we don't support the export of " + field_to_convert)
+                            # todo - when converted_fields can be imported successfully change reason in debug info above
+                            break
+                    if field_removed:
+                        continue  # Already handled the field so the code below is irrelevant
+
                 local_no_export_fields_and_subfields = list(no_export_fields_and_subfields)
                 if api_type == "time":
                     # For time objects, these two fields are required and must be retained!
@@ -493,7 +530,16 @@ def clean_objects(data_dict):
                     local_no_export_fields_and_subfields.remove("type")
                 if api_type == "exception-group":
                     local_no_export_fields_and_subfields.remove("layer")
-                if any(x for x in sub_fields if x in local_no_export_fields_and_subfields) or (
-                            sub_fields[0] in no_export_fields) or (api_type in no_export_fields_by_api_type and any(
-                    x for x in sub_fields if x in no_export_fields_by_api_type[api_type])):
-                    obj.pop(field,None)
+
+                if any(x for x in sub_fields if x in local_no_export_fields_and_subfields) or \
+                        (api_type in no_export_fields_by_api_type and (
+                                any(x for x in sub_fields if x in no_export_fields_by_api_type[api_type])
+                                or field in no_export_fields_by_api_type[api_type])):
+                    obj.pop(field, None)
+
+            # todo - uncomment code below and converted_fields vars above when the converted_fields objects
+            #  can be imported successfully. Currently if the converted_field is a created object, the server importing
+            #  the data needs to create this object as well but this object isn't exported in a file so as a result we
+            #  can get a bad link error when importing
+            # for converted_field in converted_fields_to_add:
+            #     obj[converted_field] = converted_fields_to_add[converted_field]
