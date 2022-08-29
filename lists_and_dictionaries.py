@@ -314,6 +314,7 @@ singular_to_plural_dictionary = {
         "security-zone": "security-zones",
         "time": "times",
         "simple-gateway": "simple-gateways",
+        "simple-cluster": "simple-clusters",
         "dynamic-object": "dynamic-objects",
         "trusted-client": "trusted-clients",
         "tags": "tags",
@@ -370,6 +371,7 @@ singular_to_plural_dictionary = {
         "security-zone": "security-zones",
         "time": "times",
         "simple-gateway": "simple-gateways",
+        "simple-cluster": "simple-clusters",
         "dynamic-object": "dynamic-objects",
         "trusted-client": "trusted-clients",
         "tags": "tags",
@@ -426,6 +428,7 @@ singular_to_plural_dictionary = {
         "security-zone": "security-zones",
         "time": "times",
         "simple-gateway": "simple-gateways",
+        "simple-cluster": "simple-clusters",
         "dynamic-object": "dynamic-objects",
         "trusted-client": "trusted-clients",
         "tags": "tags",
@@ -482,6 +485,7 @@ singular_to_plural_dictionary = {
         "security-zone": "security-zones",
         "time": "times",
         "simple-gateway": "simple-gateways",
+        "simple-cluster": "simple-clusters",
         "dynamic-object": "dynamic-objects",
         "trusted-client": "trusted-clients",
         "tags": "tags",
@@ -538,6 +542,7 @@ singular_to_plural_dictionary = {
         "security-zone": "security-zones",
         "time": "times",
         "simple-gateway": "simple-gateways",
+        "simple-cluster": "simple-clusters",
         "dynamic-object": "dynamic-objects",
         "trusted-client": "trusted-clients",
         "tags": "tags",
@@ -594,6 +599,7 @@ singular_to_plural_dictionary = {
         "security-zone": "security-zones",
         "time": "times",
         "simple-gateway": "simple-gateways",
+        "simple-cluster": "simple-clusters",
         "dynamic-object": "dynamic-objects",
         "trusted-client": "trusted-clients",
         "tags": "tags",
@@ -650,6 +656,7 @@ singular_to_plural_dictionary = {
         "security-zone": "security-zones",
         "time": "times",
         "simple-gateway": "simple-gateways",
+        "simple-cluster": "simple-clusters",
         "dynamic-object": "dynamic-objects",
         "trusted-client": "trusted-clients",
         "tags": "tags",
@@ -778,19 +785,53 @@ group_objects_field = {
     "group-with-exclusion": []
 }
 
-no_export_fields = {"type"}
-
 no_export_fields_and_subfields = ["read-only", "layer", "package", "owner", "icon",
                                   "domain", "from", "to", "rulebase", "uid", "meta-info", "parent", "groups", "type",
                                   "override-default-settings", "available-actions"]
+
+simple_gateway_cluster_common = {
+    "no_export_fields": ["dynamic-ip", "sic-name", "sic-state", "send-alerts-to-server", "interfaces",
+                         "send-logs-to-backup-server", "send-logs-to-server", "data-loss-prevention",
+                         "enable-https-inspection", "identity-web-api", "identity-web-api-settings",
+                         "platform-portal-settings.enabled", "profile-value", "certificate-settings", "fetch-policy",
+                         "office-mode" # todo- delete this when fields_to_convert_from_obj_to_identifier can be created successfully
+                         ],
+    "fields_to_convert_from_obj_to_identifier": ["vpn-settings.remote-access.nat-traversal-service",
+                                                 "vpn-settings.remote-access.visitor-mode-service",
+                                                 "vpn-settings.vpn-domain",
+                                                 "vpn-settings.authentication.authentication-clients",
+                                                 # "vpn-settings.office-mode.group",
+                                                 # "vpn-settings.office-mode.allocate-ip-address-from.manual-network",
+                                                 # "vpn-settings.office-mode.allocate-ip-address-from.dhcp-server",
+                                                 # "vpn-settings.office-mode.allocate-ip-address-from.optional-parameters.primary-dns-server",
+                                                 # "vpn-settings.office-mode.allocate-ip-address-from.optional-parameters.first-backup-dns-server",
+                                                 # "vpn-settings.office-mode.allocate-ip-address-from.optional-parameters.second-backup-dns-server",
+                                                 # "vpn-settings.office-mode.allocate-ip-address-from.optional-parameters.primary-wins-server",
+                                                 # "vpn-settings.office-mode.allocate-ip-address-from.optional-parameters.first-backup-wins-server",
+                                                 # "vpn-settings.office-mode.allocate-ip-address-from.optional-parameters.second-backup-wins-server",
+                                                 # "vpn-settings.office-mode.anti-spoofing-additional-addresses"
+                                                 ]# todo- uncomment when they can be created successfully
+}
 
 no_export_fields_by_api_type = {
     "host": ["standard-port-number", "subnet-mask", "type"],
     "network": ["subnet-mask"],
     "threat-rule": ["exceptions", "exceptions-layer"],
-    "simple-gateway": ["forward-logs-to-log-server-schedule-name", "hardware", "dynamic-ip", "sic-name", "sic-state",
-                       "send-alerts-to-server",
-                       "send-logs-to-backup-server", "send-logs-to-server", "interfaces"],
+    "simple-gateway": ["forward-logs-to-log-server-schedule-name", "ad-query", "collecting-identities",
+                       "radius-accounting", "terminal-servers", "smb-logs-settings", "hardware",
+                       "identity-awareness-settings.identity-agent-settings.identity-agent-portal-settings.portal-web-settings.aliases",
+                       "identity-awareness-settings.identity-agent-settings.identity-agent-portal-settings.portal-web-settings.ip-address",
+                       "identity-awareness-settings.identity-agent-settings.identity-agent-portal-settings.portal-web-settings.main-url",
+                       "identity-awareness-settings.identity-collector-settings.client-access-permissions.portal-web-settings.aliases",
+                       "identity-awareness-settings.identity-collector-settings.client-access-permissions.portal-web-settings.ip-address",
+                       "identity-awareness-settings.identity-collector-settings.client-access-permissions.portal-web-settings.main-url",
+                       "alert-when-free-disk-space-below-metrics", "delete-index-files-when-index-size-above-metrics",
+                       "delete-when-free-disk-space-below-metrics", "stop-logging-when-free-disk-space-below-metrics"] +
+                       simple_gateway_cluster_common['no_export_fields'] +
+                       simple_gateway_cluster_common['fields_to_convert_from_obj_to_identifier'],# todo-delete this line when those objects can be imported successfully
+
+    "simple-cluster": ["logs-settings", "save-logs-locally", "sic-message", "sic-state"] + simple_gateway_cluster_common['no_export_fields'] +
+                      simple_gateway_cluster_common['fields_to_convert_from_obj_to_identifier'], # todo-delete this line when those objects can be imported successfully
     "application-site": ["application-id", "risk", "user-defined"],
     "application-site-category": ["user-defined"],
     "data-center-object": ["name-in-data-center", "data-center", "data-center-object-meta-info", "deleted",
@@ -801,7 +842,8 @@ fields_to_change = {
     "alert-when-free-disk-space-below-metrics": "free-disk-space-metrics",
     "delete-index-files-when-index-size-above-metrics": "free-disk-space-metrics",
     "delete-when-free-disk-space-below-metrics": "free-disk-space-metrics",
-    "stop-logging-when-free-disk-space-below-metrics": "free-disk-space-metrics"
+    "stop-logging-when-free-disk-space-below-metrics": "free-disk-space-metrics",
+    "cluster-members": "members"
 }
 
 fields_to_exclude_in_the_presence_of_other_fields = {
@@ -810,13 +852,35 @@ fields_to_exclude_in_the_presence_of_other_fields = {
     "memory-pool-size": "auto-calculate-connections-hash-table-size-and-memory-pool"
 }
 
+# x : {y:a} -> if field x is in the payload, as well as field y with the value a, field x should be removed from the payload
+fields_to_exclude_due_to_value_of_other_fields = {
+    "advanced-settings.sam.purge-sam-file.purge-when-size-reaches-to": {
+        "advanced-settings.sam.purge-sam-file.enabled": False},
+    "aggressive-aging.timeout": {"aggressive-aging.use-default-timeout": True},
+    "firewall-settings.maximum-limit-for-concurrent-connections": {
+        "firewall-settings.auto-maximum-limit-for-concurrent-connections": True},
+    "firewall-settings.auto-calculate-connections-hash-table-size-and-memory-pool": {
+        "firewall-settings.auto-maximum-limit-for-concurrent-connections": True},
+    "firewall-settings.memory-pool-size": {
+        "firewall-settings.auto-calculate-connections-hash-table-size-and-memory-pool": True},
+    "firewall-settings.maximum-memory-pool-size": {
+        "firewall-settings.auto-calculate-connections-hash-table-size-and-memory-pool": True}
+}
+
+# in cases where the request is a single value (e.g name) and the reply is the corresponding object, we wish to create
+# a new field named same as the object with the identifier as its value (and delete the rest of the objects' fields!)
+fields_to_convert_from_obj_to_identifier_by_api_type = {
+    "simple-gateway": simple_gateway_cluster_common['fields_to_convert_from_obj_to_identifier'],
+    "simple-cluster": simple_gateway_cluster_common['fields_to_convert_from_obj_to_identifier']
+}
+
 fields_to_exclude_from_import_by_api_type_and_versions = {
     "network": {
         "broadcast": ["1"]
     }
 }
 
-partially_exportable_types = ["simple-gateway"]
+partially_exportable_types = ["simple-gateway", "simple-cluster"]
 
 special_treatment_types = [
     "threat-profile"

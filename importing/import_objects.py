@@ -9,7 +9,7 @@ from lists_and_dictionaries import (singular_to_plural_dictionary, generic_objec
                                     https_blades_names_map,
                                     commands_support_batch, rule_support_batch, not_unique_name_with_dedicated_api,
                                     types_not_support_tagging)
-from utils import debug_log, create_payload, compare_versions, generate_new_dummy_ip_address
+from utils import debug_log, create_payload, compare_versions, generate_new_dummy_ip_address, get_reply_err_msg
 
 duplicates_dict = {}
 position_decrements_for_sections = []
@@ -307,8 +307,12 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
     for field in ["members", "source", "destination"]:
         if field in payload:
             for i, member in enumerate(payload[field]):
-                if member in name_collision_map:
-                    payload[field][i] = name_collision_map[member]
+                if api_type == 'simple-cluster':
+                    if member['name'] in name_collision_map:
+                        payload[field][i]['name'] = name_collision_map[member['name']]
+                else:
+                    if member in name_collision_map:
+                        payload[field][i] = name_collision_map[member]
 
     payload["ignore-warnings"] = True  # Useful for example when creating two hosts with the same IP
 
@@ -483,8 +487,6 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
                     else:
                         blades_to_import.append(blade)
                 payload["blade"] = blades_to_import
-    elif "service" in api_type:
-        handle_service_default_timeout(payload)
 
     if "tags" in payload:
         handle_import_tags(payload, api_type, client)
@@ -504,35 +506,63 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
                 payload["applied-threat-rules"] = applied_threat_rules
 
     api_reply = client.api_call(api_call, payload)
+    reply_err_msg = get_reply_err_msg(api_reply)
 
-    if not api_reply.success and "name" in payload and "More than one object" in api_reply.error_message:
+    if not api_reply.success and "name" in payload and "More than one object" in reply_err_msg:
         if args is not None and not args.skip_duplicate_objects:
             i = 0
             original_name = payload["name"]
-            while not api_reply.success:
+            while not api_reply.success and payload["name"] in reply_err_msg:
                 payload["name"] = "NAME_COLLISION_RESOLVED" + ("_" if i == 0 else "_%s_" % i) + original_name
                 api_reply = client.api_call(api_call, payload)
+                reply_err_msg = get_reply_err_msg(api_reply)
                 i += 1
 
                 if i > 100:
                     payload["name"] = original_name
                     break
 
-            if api_reply.success:
+            # it's possible that at least one of the members' name might've caused collision
+            if api_type == "simple-cluster" and not api_reply.success and 'members' in payload:
+                # since the members param is a list and the name-uniqueness-validation goes through the members by order
+                # we can do so as well and catch multiple collisions
+                for index, member in enumerate(payload['members']):
+                    iter_num = 0
+                    member_orig_name = member['name']
+                    while not api_reply.success and "More than one object" in reply_err_msg and payload['members'][index]['name'] in reply_err_msg:
+                        payload['members'][index]['name'] = "NAME_COLLISION_RESOLVED" + ("_" if iter_num == 0 else "_%s_" % iter_num) + member_orig_name
+                        api_reply = client.api_call(api_call, payload)
+                        reply_err_msg = get_reply_err_msg(api_reply)
+                        iter_num += 1
+
+                        if iter_num > 100:
+                            payload['members'][index]['name'] = member_orig_name
+                            break
+
+                    if api_reply.success or ("More than one object" in reply_err_msg and
+                                             payload['members'][index]['name'] not in reply_err_msg):
+                        # there might be another collision with a different member than the one that was fixed
+                        debug_log("Cluster Member \"%s\" of Simple-Cluster \"%s\" was renamed to \"%s\" to resolve the name collision"
+                                  % (member_orig_name, payload["name"], payload['members'][index]['name']), True, True)
+                        name_collision_map[member_orig_name] = payload['members'][index]['name']
+                        if api_reply.success:
+                            break
+
+            if api_reply.success and original_name != payload["name"]:
                 debug_log("Object \"%s\" was renamed to \"%s\" to resolve the name collision"
                           % (original_name, payload["name"]), True, True)
                 name_collision_map[original_name] = payload["name"]
         else:
             api_reply.success = True
             debug_log("skip duplicate object [{0}]".format(payload["name"]), True, True)
-         
+
     if not api_reply.success:
         if api_reply.data and "errors" in api_reply.data:
             error_msg = api_reply.data["errors"][0]["message"]
         elif api_reply.data and "warnings" in api_reply.data:
             error_msg = api_reply.data["warnings"][0]["message"]
         else:
-            error_msg = api_reply.error_message
+            error_msg = get_reply_err_msg(api_reply)
         log_err_msg = ""
         try:
             log_err_msg = "Failed to import {0}{1}. Error: {2}".format(api_type, " with name [" + str(payload[
@@ -540,15 +570,17 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
         except UnicodeEncodeError:
             log_err_msg = "Failed to import {0} object. Error: {1}".format(api_type, error_msg)
 
-        if "More than one object" in api_reply.error_message:
-            log_err_msg = api_reply.error_message + ". Cannot import this object"
+        reply_err_msg = get_reply_err_msg(api_reply)
 
-        if "Object is already imported. please use the existing object" in api_reply.error_message:
+        if "More than one object" in reply_err_msg:
+            log_err_msg = reply_err_msg + ". Cannot import this object"
+
+        if "Object is already imported. please use the existing object" in reply_err_msg:
             return counter, position_decrement_due_to_rule
 
         if "rule" in api_type and (
-                        "Requested object" in api_reply.error_message and "not found" in api_reply.error_message):
-            field_value = api_reply.error_message.split("[")[1].split("]")[0]
+                        "Requested object" in reply_err_msg and "not found" in reply_err_msg):
+            field_value = reply_err_msg.split("[")[1].split("]")[0]
             indices_of_field = [i for i, x in enumerate(line) if x == field_value]
             field_keys = [x for x in fields if fields.index(x) in indices_of_field]
             for field_key in field_keys:
@@ -569,7 +601,7 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
                         add_missing_reply = client.api_call(add_missing_command, add_missing_payload)
                         if not add_missing_reply.success:
                             log_err_msg += "\nAlso failed to generate placeholder object: {0}".format(
-                                add_missing_reply.error_message)
+                                get_reply_err_msg(add_missing_reply))
                             add_succeeded = False
                     if add_succeeded:
                         line[fields.index(field_key)] = new_name
@@ -577,19 +609,17 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
                                           position_decrement_due_to_section, fields, api_type, generic_type, layer,
                                           layers_to_attach,
                                           changed_layer_names, api_call, num_objects, client, args, package)
-        if "Invalid parameter for [position]" in api_reply.error_message and "exception-group" not in api_type:
+        if "Invalid parameter for [position]" in reply_err_msg and "exception-group" not in api_type:
             if "access-rule" in api_type or "https-rule" or "threat-exception" in api_type:
-                position_decrement_due_to_rule += adjust_position_decrement(int(payload["position"]),
-                                                                            api_reply.error_message)
+                position_decrement_due_to_rule += adjust_position_decrement(int(payload["position"]), reply_err_msg)
             elif "access-section" in api_type or "https-section" in api_type:
-                position_decrement_due_to_section += adjust_position_decrement(int(payload["position"]),
-                                                                               api_reply.error_message)
+                position_decrement_due_to_section += adjust_position_decrement(int(payload["position"]), reply_err_msg)
             return add_object(line, counter, position_decrement_due_to_rule, position_decrement_due_to_section, fields,
                               api_type, generic_type, layer,
                               layers_to_attach,
                               changed_layer_names, api_call, num_objects, client, args, package)
-        elif "is not unique" in api_reply.error_message and "name" in api_reply.error_message:
-            field_value = api_reply.error_message.partition("name")[2].split("[")[1].split("]")[0]
+        elif "is not unique" in reply_err_msg and "name" in reply_err_msg:
+            field_value = reply_err_msg.partition("name")[2].split("[")[1].split("]")[0]
             debug_log("Not unique name problem \"%s\" - changing payload to use UID instead." % field_value, True, True)
             obj_uid_found_and_used = False
             if field_value not in duplicates_dict:
@@ -619,7 +649,7 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
                                   changed_layer_names, api_call, num_objects, client, args, package)
             else:
                 debug_log("Not unique name problem \"%s\" - cannot change payload to use UID instead of name." % field_value, True, True)
-        elif "will place the exception in an Exception-Group" in api_reply.error_message:
+        elif "will place the exception in an Exception-Group" in reply_err_msg:
             return add_object(line, counter, position_decrement_due_to_rule - 1, position_decrement_due_to_section,
                               fields, api_type, generic_type, layer, layers_to_attach,
                               changed_layer_names, api_call, num_objects, client, args, package)
@@ -630,8 +660,7 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
         if args is not None and args.strict:
             discard_reply = client.api_call("discard")
             if not discard_reply.success:
-                debug_log("Failed to discard changes! Terminating. Error: " +
-                          discard_reply.error_message,
+                debug_log("Failed to discard changes! Terminating. Error: " + get_reply_err_msg(discard_reply),
                           True, True)
             exit(1)
     else:
@@ -650,25 +679,25 @@ def add_object(line, counter, position_decrement_due_to_rule, position_decrement
             if counter % 100 == 0 or counter == num_objects:
                 publish_reply = client.api_call("publish", wait_for_task=True)
                 if not publish_reply.success:
+                    publish_reply_err_msg = get_reply_err_msg(publish_reply)
                     plural = singular_to_plural_dictionary[client.api_version][api_type].replace('_', ' ') \
                         if api_type in singular_to_plural_dictionary[client.api_version] \
                         else "generic objects of type " + api_type
                     try:
                         debug_log("Failed to publish import of " + plural + " from tar file #" +
                                   str((counter / 100) + 1) + "! " + plural.capitalize() +
-                                  " from said file were not imported!. Error: " + str(publish_reply.error_message),
+                                  " from said file were not imported!. Error: " + publish_reply_err_msg,
                                   True, True)
                     except UnicodeEncodeError:
                         try:
-                            debug_log("UnicodeEncodeError: " + str(publish_reply.error_message), True, True)
+                            debug_log("UnicodeEncodeError: " + publish_reply_err_msg, True, True)
                         except:
                             debug_log("UnicodeEncodeError: .encode('utf-8') FAILED", True, True)
 
                     discard_reply = client.api_call("discard")
                     if not discard_reply.success:
                         debug_log("Failed to discard changes of unsuccessful publish! Terminating. Error: " +
-                                  discard_reply.error_message,
-                                  True, True)
+                                  get_reply_err_msg(discard_reply), True, True)
                         exit(1)
 
     return counter + 1, position_decrement_due_to_rule
@@ -699,13 +728,6 @@ def create_batch_payload(api_type, data, fields, client, args, is_rule_type, cha
     return batch_payload
 
 
-def handle_service_default_timeout(payload):
-    if "aggressive-aging" in payload:
-        if "use-default-timeout" in payload["aggressive-aging"] and payload["aggressive-aging"]["use-default-timeout"]:
-            if "timeout" in payload["aggressive-aging"]:
-                del payload["aggressive-aging"]["timeout"]
-
-
 def update_payload_batch(client, payload, api_type, args, is_rule_type, changed_layer_names, package, generic_type,
                          layer, layers_to_attach):
     if args is not None and args.objects_suffix != "":
@@ -723,9 +745,6 @@ def update_payload_batch(client, payload, api_type, args, is_rule_type, changed_
 
     if args is not None and args.tag_objects_on_import != "":
         add_tag_to_object_payload(args.tag_objects_on_import, payload, api_type, client)
-
-    if "service" in api_type:
-        handle_service_default_timeout(payload)
 
     if is_rule_type:
         global should_create_imported_nat_top_section
