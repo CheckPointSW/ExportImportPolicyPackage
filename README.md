@@ -31,3 +31,7 @@ To export a package, run the import_export_package.py script. An interactive men
 ## Development Environment
 The tool is developed using Python language version 2.7.9 and [Check Point API Python SDK.](https://github.com/CheckPoint-APIs-Team/cpapi-python-sdk)
 From version 5.0 the tool is developed using Python language version 3.7.
+
+## Requirements
+From version 5.0 the min Python language version required is 3.7.
+Last release to support Python language version 2.7.9 is v4.2.
