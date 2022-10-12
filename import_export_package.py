@@ -1,5 +1,7 @@
 from __future__ import print_function
 
+import sys
+
 import argparse
 
 from cpapi import APIClient, APIClientArgs
@@ -21,6 +23,8 @@ def get_version(client):
 
 
 if __name__ == "__main__":
+    if sys.version_info < (3, 7):
+        raise Exception("Min Python version required is 3.7")
 
     arg_parser = argparse.ArgumentParser(description="R80.X Policy Package Export/Import Tool, V5.8")
     args = process_arguments(arg_parser)
