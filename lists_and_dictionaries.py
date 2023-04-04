@@ -832,7 +832,7 @@ no_export_fields_by_api_type = {
 
     "simple-cluster": ["logs-settings", "save-logs-locally", "sic-message", "sic-state"] + simple_gateway_cluster_common['no_export_fields'] +
                       simple_gateway_cluster_common['fields_to_convert_from_obj_to_identifier'], # todo-delete this line when those objects can be imported successfully
-    "application-site": ["application-id", "risk", "user-defined", "primary-category-id"],
+    "application-site": ["application-id", "risk", "user-defined", "primary-category-id", "additional-categories-ids"],
     "application-site-category": ["user-defined"],
     "data-center-object": ["name-in-data-center", "data-center", "data-center-object-meta-info", "deleted",
                            "type-in-data-center", "additional-properties"]
