@@ -715,6 +715,9 @@ import_priority = {
     "service-group": 2,
     "time-group": 2,
     "application-group": 2,
+    "application-site-category": 1,
+    "application-site": 2,
+    "application-site-group": 3,
 }
 
 generic_objects_for_rule_fields = {
