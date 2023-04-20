@@ -966,7 +966,7 @@ def add_suffix_to_objects(payload, api_type, objects_suffix):
         return
 
     fields_to_change = ["name", "source", "destination", "service", "members", "inline-layer", "networks", "host",
-                        "protected-scope", "protection-or-site", "exception-group-name", "rule-name", "applied-threat-rules"]
+                        "protected-scope", "protection-or-site", "action", "site-category", "exception-group-name", "rule-name", "applied-threat-rules"]
     if api_type == "threat-exception" and "exception-group-name" in payload and "name" not in payload:
         payload.update({"name": ""})
     for field in fields_to_change:
@@ -976,11 +976,11 @@ def add_suffix_to_objects(payload, api_type, objects_suffix):
                 newName = oldName + objects_suffix
                 payload[field] = newName
                 changed_object_names_map[oldName] = newName
-            elif field in ["source", "destination", "service", "members", "protected-scope", "protection-or-site"]:
+            elif field in ["source", "destination", "service", "members", "protected-scope", "protection-or-site", "site-category"]:
                 for i in range(len(payload[field])):
                     if payload[field][i] in changed_object_names_map and payload[field][i] != "IPS":
                         payload[field][i] = changed_object_names_map[payload[field][i]]
-            elif field in ["inline-layer", "host", "exception-group-name", "rule-name"]:
+           elif field in ["inline-layer", "host", "exception-group-name", "rule-name", "action"]:
                 if payload[field] in changed_object_names_map:
                     payload[field] = changed_object_names_map[payload[field]]
             elif field == "networks":
