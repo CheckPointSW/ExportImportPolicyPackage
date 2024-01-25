@@ -41,8 +41,12 @@ if __name__ == "__main__":
             payload["read-only"] = "true" if args.operation == "export" else "false"
             if args.session_timeout:
                 payload["session-timeout"] = args.session_timeout
-            login_reply = client.login(username=args.username, password=args.password, domain=args.domain,
-                                       payload=payload)
+            if args.api_key:
+                login_reply = client.login_with_api_key(api_key=args.api_key, domain=args.domain,
+                                                        payload=payload)
+            else:
+                login_reply = client.login(username=args.username, password=args.password, domain=args.domain,
+                                           payload=payload)
             handle_login_fail(not login_reply.success, "Login to management server failed. " + str(login_reply))
         elif args.login == '2':
             if args.session_timeout:
