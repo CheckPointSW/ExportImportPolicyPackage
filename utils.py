@@ -35,7 +35,11 @@ def populate_parser(parser):
     parser.add_argument("-u", "--username", required=False, default=os.getenv('MGMT_CLI_USER'),
                         help="The management administrator's user name.\nEnvironment variable: MGMT_CLI_USER")
     parser.add_argument("-p", "--password", required=False,
-                        help="The management administrator's password.\nEnvironment variable: MGMT_CLI_PASSWORD")
+                        help="The management administrator's password.\nEnvironment variable: MGMT_CLI_PASSWORD",
+                        default=os.getenv('MGMT_CLI_PASSWORD'))
+    parser.add_argument("--api-key", required=False,
+                        help="The management administrator's API Key.\nEnvironment variable: MGMT_CLI_API_KEY",
+                        default=os.getenv('MGMT_CLI_API_KEY'))
     parser.add_argument("-m", "--management", required=False, default=os.getenv('MGMT_CLI_MANAGEMENT', "127.0.0.1"),
                         help="The management server's IP address (In the case of a Multi-Domain Environment, use the IP address of the MDS domain).\nDefault: 127.0.0.1\nEnvironment variable: MGMT_CLI_MANAGEMENT")
     parser.add_argument("--port", "--server-port", required=False, default=os.getenv('MGMT_CLI_PORT', 443),

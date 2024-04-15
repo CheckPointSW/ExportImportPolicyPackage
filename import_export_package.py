@@ -26,7 +26,7 @@ if __name__ == "__main__":
     if sys.version_info < (3, 7):
         raise Exception("Min Python version required is 3.7")
 
-    arg_parser = argparse.ArgumentParser(description="R80.X Policy Package Export/Import Tool, V5.8")
+    arg_parser = argparse.ArgumentParser(description="R80.X Policy Package Export/Import Tool, V5.9.0")
     args = process_arguments(arg_parser)
     if args.force:
         args.unsafe_auto_accept = True
@@ -41,8 +41,12 @@ if __name__ == "__main__":
             payload["read-only"] = "true" if args.operation == "export" else "false"
             if args.session_timeout:
                 payload["session-timeout"] = args.session_timeout
-            login_reply = client.login(username=args.username, password=args.password, domain=args.domain,
-                                       payload=payload)
+            if args.api_key:
+                login_reply = client.login_with_api_key(api_key=args.api_key, domain=args.domain,
+                                                        payload=payload)
+            else:
+                login_reply = client.login(username=args.username, password=args.password, domain=args.domain,
+                                           payload=payload)
             handle_login_fail(not login_reply.success, "Login to management server failed. " + str(login_reply))
         elif args.login == '2':
             if args.session_timeout:

@@ -59,8 +59,8 @@ class Menu:
                 self.lowest_level = 2
                 display = False
         elif self.level == 2:
-            if not (self.args.username or self.args.password or
-                        self.args.session_id or self.args.session_file or self.args.root):
+            if not (self.args.api_key or self.args.username or self.args.password or
+                    self.args.session_id or self.args.session_file or self.args.root):
                 self.title = "Please select a login method:"
                 self.options = ["Enter user credentials manually", "Login as Root",
                                 "Use an existing session file", "Use an existing session UID"]
@@ -68,7 +68,7 @@ class Menu:
             else:
                 if self.args.root:
                     self.self_args.login = '2'
-                elif self.args.username or self.args.password:
+                elif self.args.username or self.args.password or self.args.api_key:
                     self.self_args.login = '1'
                 elif self.args.session_file:
                     self.self_args.login = '3'
@@ -80,10 +80,13 @@ class Menu:
         elif self.level == 3 and self.export:
             if not self.args.force:
                 self.title = "The script will run with the following parameters:\n" + \
-                             "Export Access-Control layers = " + str(self.self_args.access or self.self_args.all) + "\n" + \
+                             "Export Access-Control layers = " + str(
+                    self.self_args.access or self.self_args.all) + "\n" + \
                              "Export NAT layers = " + str(self.self_args.nat or self.self_args.all) + "\n" + \
-                             "Export Threat-Prevention layers = " + str(self.self_args.threat or self.self_args.all) + "\n" + \
-                             "Export HTTPS Inspection layers = " + str(self.self_args.https or self.self_args.all) + "\n" + \
+                             "Export Threat-Prevention layers = " + str(
+                    self.self_args.threat or self.self_args.all) + "\n" + \
+                             "Export HTTPS Inspection layers = " + str(
+                    self.self_args.https or self.self_args.all) + "\n" + \
                              "Output-file name = " + str(self.self_args.output_file) + "\n" + \
                              "Management Server IP = " + str(self.self_args.management) + "\n" + \
                              "Management Server Port = " + str(self.self_args.port) + "\n" + \
@@ -129,19 +132,14 @@ class Menu:
                             "Change Management Server Port", "Change the domain name"]
             self.last_option = "Exit" if self.level == self.lowest_level else "Back"
         elif self.level == 5:
-            if not self.args.username:
-                self.title = "Please enter your username:"
-                self.options = []
+            if not self.self_args.api_key and not self.self_args.username and not self.self_args.password:
+                self.title = "Please select authentication method:"
+                self.options = ["Username & Password",
+                                "API Key"]
+                self.last_option = "Exit" if self.level == self.lowest_level else "Back"
             else:
-                self.level = 6
-                display = False
-        elif self.level == 6:
-            if not self.args.password:
-                # The menu title will be provided at the password prompt
                 self.title = ""
                 self.options = []
-            else:
-                return
         if display:
             self.display()
         else:
@@ -212,7 +210,8 @@ class Menu:
                 elif choice == 2:
                     self.self_args.threat = not self.self_args.threat
                     self.menu_print(
-                        "Exporting of Threat-Prevention layers " + "enabled" if self.self_args.threat else "disabled", 2)
+                        "Exporting of Threat-Prevention layers " + "enabled" if self.self_args.threat else "disabled",
+                        2)
                 elif choice == 3:
                     self.self_args.nat = not self.self_args.nat
                     self.menu_print(
@@ -255,17 +254,39 @@ class Menu:
             except ValueError:
                 self.display_wrong_choice()
         elif self.level == 5:
-            if not self.self_args.username:
-                self.self_args.username = input()
-            self.level = 6
-        elif self.level == 6:
-            if not self.self_args.password:
-                if sys.stdin.isatty():
-                    self.self_args.password = getpass.getpass("Please enter your password:\n")
+            try:
+                choice = None
+                if self.self_args.username or self.self_args.password:
+                    choice = 1
+                elif self.self_args.api_key:
+                    choice = 2
                 else:
-                    print("Attention! Your password will be shown on the screen!", file=sys.stderr)
-                    self.self_args.password = input("Please enter your password:\n")
-            return
+                    choice = int(input())
+                if choice == 1:
+                    if not self.self_args.username:
+                        self.menu_print("Please enter your username:", 0)
+                        self.self_args.username = input()
+                    if not self.self_args.password:
+                        if sys.stdin.isatty():
+                            self.self_args.password = getpass.getpass("Please enter your password:\n")
+                        else:
+                            print("Attention! Your password will be shown on the screen!", file=sys.stderr)
+                            self.self_args.password = input("Please enter your password:\n")
+                    return
+                elif choice == 2:
+                    if not self.self_args.api_key:
+                        if sys.stdin.isatty():
+                            self.self_args.api_key = getpass.getpass("Please enter your API key:\n")
+                        else:
+                            print("Attention! Your API key will be shown on the screen!", file=sys.stderr)
+                            self.self_args.api_key = input("Please enter your API key:\n")
+                    return
+                elif choice == 99:
+                    self.level = 3
+                else:
+                    self.display_wrong_choice()
+            except ValueError:
+                self.display_wrong_choice()
         self.build()
 
     def display_wrong_choice(self):
