@@ -75,7 +75,7 @@ def import_package(client, args):
     set_package_payload = {"name": package, "access-layers": {"add": access_layers},
                            "threat-layers": {"add": threat_layers}}
 
-    if "https" in layers_to_attach:
+    if "https" in layers_to_attach and len(layers_to_attach["https"]) > 0:
         # If the imported package's version < 2
         if compare_versions(client.api_version, '2') == -1:
             outbound_layer_name = layers_to_attach["https"][0]
