@@ -4,7 +4,7 @@ import time
 import sys
 
 from importing.import_objects import import_objects, add_tag_to_object_payload
-from utils import debug_log, generate_import_error_report, count_global_layers
+from utils import debug_log, generate_import_error_report, count_global_layers, compare_versions
 
 
 def import_package(client, args):
@@ -53,6 +53,7 @@ def import_package(client, args):
                 exit(0)
 
     debug_log("Importing general objects", True)
+    machine_version = client.api_version
     layers_to_attach = import_objects(args.file, client, {}, package, None, args)
 
     num_global_access, num_global_threat = count_global_layers(client, package)
@@ -74,17 +75,31 @@ def import_package(client, args):
     set_package_payload = {"name": package, "access-layers": {"add": access_layers},
                            "threat-layers": {"add": threat_layers}}
 
-    if "https" in layers_to_attach and len(layers_to_attach["https"]) > 0:
-        https_layer_name = layers_to_attach["https"][0]
-        set_package_payload["https-layer"] = https_layer_name
+    if "https" in layers_to_attach:
+        # If the imported package's version < 2
+        if compare_versions(client.api_version, '2') == -1:
+            outbound_layer_name = layers_to_attach["https"][0]
+            # If the version of the machine importing the package < 2
+            if compare_versions(machine_version, '2') == -1:
+                set_package_payload["https-layer"] = outbound_layer_name
+
+        else:
+            inbound_layer_name = layers_to_attach["https"][0]
+            outbound_layer_name = layers_to_attach["https"][1]
+            set_package_payload["https-inspection-layers"] = {"inbound-https-layer": inbound_layer_name,
+                                                              "outbound-https-layer": outbound_layer_name}
+
         # Remove default 'Predefined Rule'
-        https_rulebase_reply = client.api_call("show-https-rulebase", {"name": https_layer_name, "details-level": "uid"})
+        https_rulebase_reply = client.api_call("show-https-rulebase",
+                                               {"name": outbound_layer_name, "details-level": "uid"})
         if https_rulebase_reply.success and "total" in https_rulebase_reply.data:
             last_rule_number = int(https_rulebase_reply.data["total"])
             if last_rule_number > 1:
-                delete_https_rule = client.api_call("delete-https-rule", {"rule-number": last_rule_number, "layer": https_layer_name})
+                delete_https_rule = client.api_call("delete-https-rule",
+                                                    {"rule-number": last_rule_number, "layer": outbound_layer_name})
                 if not delete_https_rule.success:
-                    debug_log("Failed to remove default Predefined Rule in https layer ["+https_layer_name+"]", True, True)
+                    debug_log("Failed to remove default Predefined Rule in https layer [" + outbound_layer_name + "]",
+                              True, True)
 
     debug_log("Attaching layers to package")
     layer_attachment_reply = client.api_call("set-package", set_package_payload)
@@ -98,21 +113,3 @@ def import_package(client, args):
         sys.exit(1)
 
     generate_import_error_report()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

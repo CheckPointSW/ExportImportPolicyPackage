@@ -9,7 +9,7 @@ from exporting.export_objects import merge_data
 from exporting.export_threat_rulebase import export_threat_rulebase
 from exporting.export_https_rulebase import export_https_rulebase
 from lists_and_dictionaries import singular_to_plural_dictionary
-from utils import debug_log, export_to_tar, create_tar_file, generate_export_error_report
+from utils import debug_log, export_to_tar, create_tar_file, generate_export_error_report, compare_versions
 
 
 def export_package(client, args):
@@ -92,7 +92,12 @@ def export_package(client, args):
         if "https-inspection-policy" in show_package.data:
             if show_package.data["https-inspection-policy"]:
                 debug_log("Exporting HTTPS layers", True)
-                https_layers = [show_package.data["https-inspection-layer"]]
+                if compare_versions(client.api_version, '2') == -1:
+                    https_layers = [show_package.data["https-inspection-layer"]]
+                else:
+                    https_layers = []
+                    for layer_data in show_package.data["https-inspection-layers"].values():
+                        https_layers.append(layer_data)
                 for https_layer in https_layers:
                     https_data_dict, https_unexportable_objects \
                         = export_https_rulebase(show_package.data["name"], https_layer["name"], https_layer["uid"], client)

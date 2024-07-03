@@ -284,6 +284,8 @@ def export_to_tar(data_dict, timestamp, tar, lst, api_version, ignore_list=None)
 def write_data(json_data, out_file, file_format, close_file=True):
     for obj in json_data:
         for field in obj:
+            if field == "certificate" and "https-rule" in out_file.name:
+                continue
             if obj[field] in unexportable_objects_map:
                 obj[field] = unexportable_objects_map[obj[field]]
     if "json" in file_format:

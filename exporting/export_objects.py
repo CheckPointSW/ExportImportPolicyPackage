@@ -48,6 +48,8 @@ def get_query_rulebase_data(client, api_type, payload):
                           "comments": layer_data["comments"],
                           "shared": layer_data["shared"],
                           "type": "https-layer"}
+        if "layer-type" in layer_data:
+            layer_settings["layer-type"] = layer_data["layer-type"]
     else:
         layer_settings = {"name": layer_data["name"],
                           "uid": layer_data["uid"],

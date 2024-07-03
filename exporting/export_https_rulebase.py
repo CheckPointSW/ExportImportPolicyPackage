@@ -9,7 +9,7 @@ from utils import debug_log
 
 def export_https_rulebase(package, layer, layer_uid, client):
     data_dict = {}
-
+    certs = {}
     debug_log("Exporting HTTPS Layer [" + layer + "]", True)
 
     layer_settings, rulebase_sections, rulebase_rules, general_objects = \
@@ -24,9 +24,23 @@ def export_https_rulebase(package, layer, layer_uid, client):
     to_position = None
 
     debug_log("Processing https rules and sections", True)
-
     for rulebase_item in rulebase_sections + rulebase_rules:
         if "rule" in rulebase_item["type"]:
+            cert_uid = rulebase_item["certificate"]
+            if cert_uid not in certs:
+                for index, obj in enumerate(unexportable_objects):
+                    if obj["uid"] == cert_uid:
+                        if "display-name" in obj:
+                            certs[cert_uid] = obj["display-name"]
+                        else:
+                            certs[cert_uid] = obj["name"].split(cert_uid + '_')[-1]
+                        rulebase_item["certificate"] = certs[cert_uid]
+                        unexportable_objects.pop(index)
+                        break
+            # in case the cert is a default obj then we can keep its uid
+            #we already iterated of this crt in a different rule
+            else:
+                rulebase_item["certificate"] = certs[cert_uid]
             replace_rule_field_uids_by_name(rulebase_item, general_objects)
         elif "section" in rulebase_item["type"]:
             if "from" in rulebase_item:
