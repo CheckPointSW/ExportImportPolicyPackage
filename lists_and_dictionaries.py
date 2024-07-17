@@ -817,7 +817,8 @@ singular_to_plural_dictionary = {
         "https-layer": "https-layers",
         "https-section": "https-sections",
         "https-rule": "https-rules",
-        "central-license": "central-licenses"
+        "central-license": "central-licenses",
+        "limit": "limits"
     },
 }
 
