@@ -991,11 +991,7 @@ fields_to_exclude_due_to_value_of_other_fields = {
 # a new field named same as the object with the identifier as its value (and delete the rest of the objects' fields!)
 fields_to_convert_from_obj_to_identifier_by_api_type = {
     "simple-gateway": simple_gateway_cluster_common['fields_to_convert_from_obj_to_identifier'],
-    "simple-cluster": simple_gateway_cluster_common['fields_to_convert_from_obj_to_identifier'],
-    "data-type-traditional-group": ["data-types"],
-    "data-type-group": ["file-content", "file-type"],
-    "data-type-file-attributes": ["file-groups-list"],
-    "data-type-compound-group": ["matched-groups", "unmatched-groups"]
+    "simple-cluster": simple_gateway_cluster_common['fields_to_convert_from_obj_to_identifier']
 }
 
 fields_to_exclude_from_import_by_api_type_and_versions = {
