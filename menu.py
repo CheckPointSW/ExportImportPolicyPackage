@@ -21,10 +21,11 @@ class Menu:
         self.build()
 
     def display(self):
-        Menu.menu_print(self.title, 1)
-        for i in range(1, len(self.options)):
-            self.menu_print(str(i) + ". " + self.options[i - 1], 0)
+        if self.title:
+            Menu.menu_print(self.title, 1)
         if self.options:
+            for i in range(1, len(self.options)):
+                self.menu_print(str(i) + ". " + self.options[i - 1], 0)
             self.menu_print(str(len(self.options)) + ". " + self.options[len(self.options) - 1], 1)
             self.menu_print("99. " + self.last_option, 0)
         self.handle_input()
