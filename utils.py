@@ -3,7 +3,6 @@ import argparse
 import copy
 import csv
 from functools import cmp_to_key
-import imp
 import json
 import os
 import re
@@ -174,13 +173,6 @@ def get_min_version(version1, version2):
     if compare_versions(version1, version2) < 0:
         return version1
     return version2
-
-
-def get_special_treatment_list():
-    _, pathname, description = imp.find_module("exporting.special_treatment_objects")
-    return set([os.path.splitext(module)[0]
-                for module in os.listdir(pathname)
-                if module.endswith('.py')])
 
 
 def extract_sid_from_session_file(session_file):
