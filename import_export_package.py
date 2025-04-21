@@ -60,7 +60,10 @@ if __name__ == "__main__":
             handle_login_fail(not test_reply.success, "Extract SID is invalid!")
             get_version(client)
         elif args.login == '4':
-            client.sid = input("Please enter sid: ")
+            if args.session_id:
+                client.sid = args.session_id
+            else:
+                client.sid = input("Please enter sid: ")
             test_reply = client.api_call("show-hosts", {"limit": 1})
             handle_login_fail(not test_reply.success, "Supplied SID is invalid!")
             get_version(client)
