@@ -489,14 +489,15 @@ def clean_objects(data_dict):
             if api_type == 'simple-cluster' or api_type == 'simple-gateway' or 'service' in api_type:
                 for dependent_field in fields_to_exclude_due_to_value_of_other_fields:
                     if dependent_field in obj:
-                        # currently there's just 1 independent field; if there'll be more will need to add a 'break' if the
-                        # presence of any of the independent fields requires removal of the dependent field
+                        # for each dependant field, in the presence of any of it's independent fields in the object with
+                        # the same value as in the dict, the dependant field is removed
                         for independent_field in fields_to_exclude_due_to_value_of_other_fields[dependent_field].keys():
                             if independent_field in obj and obj[independent_field] == fields_to_exclude_due_to_value_of_other_fields[dependent_field][independent_field]:
                                 obj.pop(dependent_field, None)
                                 debug_log("The field " + dependent_field + " was removed from object of type " +
                                           api_type + " named " + obj["name"] + " since it cannot be present when the "
                                           "value of " + independent_field + " is " + str(obj[independent_field]))
+                                break
 
             # converted_fields_to_add = {}
             for field in list(obj):

@@ -984,7 +984,8 @@ fields_to_exclude_due_to_value_of_other_fields = {
     "firewall-settings.memory-pool-size": {
         "firewall-settings.auto-calculate-connections-hash-table-size-and-memory-pool": True},
     "firewall-settings.maximum-memory-pool-size": {
-        "firewall-settings.auto-calculate-connections-hash-table-size-and-memory-pool": True}
+        "firewall-settings.auto-calculate-connections-hash-table-size-and-memory-pool": True},
+    "delayed-sync-value": {"use-delayed-sync": False, "sync-connections-on-cluster": False}
 }
 
 # in cases where the request is a single value (e.g name) and the reply is the corresponding object, we wish to create
